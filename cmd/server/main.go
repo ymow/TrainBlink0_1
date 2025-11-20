@@ -13,6 +13,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/ymow/messenger_protocol_research/internal/api"
+	"github.com/ymow/messenger_protocol_research/internal/cache"
+	"github.com/ymow/messenger_protocol_research/internal/config"
+	"github.com/ymow/messenger_protocol_research/internal/database"
 	"github.com/ymow/messenger_protocol_research/pkg/logger"
 )
 
@@ -46,6 +49,34 @@ func main() {
 		zap.String("stage", "Phase 0 - Hello World"),
 	)
 
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		logger.Fatal("Failed to load configuration", zap.Error(err))
+	}
+
+	// Initialize PostgreSQL
+	db, err := database.NewPostgresDB(cfg.Database)
+	if err != nil {
+		logger.Fatal("Failed to connect to database", zap.Error(err))
+	}
+	defer func() {
+		if err := database.Close(db); err != nil {
+			logger.Error("Failed to close database", zap.Error(err))
+		}
+	}()
+
+	// Initialize Redis
+	redisService, err := cache.NewRedisService(cfg.Redis)
+	if err != nil {
+		logger.Fatal("Failed to connect to Redis", zap.Error(err))
+	}
+	defer func() {
+		if err := redisService.Close(); err != nil {
+			logger.Error("Failed to close Redis", zap.Error(err))
+		}
+	}()
+
 	// Set Gin mode
 	gin.SetMode(gin.ReleaseMode)
 
@@ -53,8 +84,8 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Recovery())
 
-	// Setup routes
-	api.SetupRoutes(router)
+	// Setup routes with database and Redis
+	api.SetupRoutes(router, db, redisService.GetClient())
 
 	// Create HTTP server
 	server := &http.Server{
@@ -76,6 +107,9 @@ func main() {
 		logger.Info("  • GET  http://localhost:8080/health")
 		logger.Info("  • GET  http://localhost:8080/api/v1/hello")
 		logger.Info("  • GET  http://localhost:8080/api/v1/welcome?name=Alice")
+		logger.Info("  • POST http://localhost:8080/api/v1/trips/start")
+		logger.Info("  • GET  http://localhost:8080/api/v1/trips/active")
+		logger.Info("  • GET  http://localhost:8080/api/v1/discoveries/stats")
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Fatal("Failed to start server", zap.Error(err))

@@ -42,6 +42,11 @@ func (s *RedisService) Close() error {
 	return s.client.Close()
 }
 
+// GetClient returns the underlying Redis client
+func (s *RedisService) GetClient() *redis.Client {
+	return s.client
+}
+
 // ============================================================
 // Session Management
 // ============================================================
