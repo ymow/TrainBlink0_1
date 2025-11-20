@@ -7,7 +7,9 @@ import (
 
 	"github.com/ymow/messenger_protocol_research/internal/api/handlers"
 	"github.com/ymow/messenger_protocol_research/internal/api/middleware"
+	"github.com/ymow/messenger_protocol_research/internal/cleanup"
 	"github.com/ymow/messenger_protocol_research/internal/discovery"
+	"github.com/ymow/messenger_protocol_research/internal/matrix"
 	"github.com/ymow/messenger_protocol_research/internal/trip"
 )
 
@@ -34,9 +36,19 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
 	tripService := trip.NewService(db, redisClient)
 	discoveryService := discovery.NewService(db)
 
+	// Initialize Matrix services (for Week 2)
+	// Note: In production, use actual Matrix homeserver URL from config
+	matrixClient := matrix.NewClient("https://matrix.trainblink.org")
+	ephemeralRoomMgr := matrix.NewEphemeralRoomManager(matrixClient, db)
+
+	// Initialize cleanup service
+	cleanupService := cleanup.NewService(db, redisClient, tripService, discoveryService, ephemeralRoomMgr)
+
 	// Initialize handlers
 	tripHandler := NewTripHandler(tripService)
 	discoveryHandler := NewDiscoveryHandler(discoveryService)
+	matrixHandler := NewMatrixHandler(ephemeralRoomMgr, tripService)
+	cleanupHandler := NewCleanupHandler(cleanupService)
 
 	// API v1 routes
 	v1 := router.Group("/api/v1")
@@ -70,10 +82,30 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
 			discoveries.GET("/route/:route/stats", discoveryHandler.GetRouteStats)
 		}
 
+		// Matrix endpoints (Week 2 - Ephemeral DMs)
+		matrixGroup := v1.Group("/matrix")
+		{
+			dm := matrixGroup.Group("/dm")
+			{
+				dm.POST("/create", matrixHandler.CreateEphemeralDM)
+				dm.GET("/active", matrixHandler.GetMyActiveEphemeralDMs)
+				dm.GET("/stats", matrixHandler.GetEphemeralRoomStats)
+				dm.GET("/:id", matrixHandler.GetEphemeralDMByID)
+				dm.PATCH("/:id/extend", matrixHandler.ExtendRoomLifetime)
+				dm.POST("/:roomId/message", matrixHandler.IncrementMessageCount)
+			}
+		}
+
+		// Cleanup endpoints (Week 2 - Admin/System endpoints)
+		cleanupGroup := v1.Group("/cleanup")
+		{
+			cleanupGroup.GET("/stats", cleanupHandler.GetCleanupStats)
+			cleanupGroup.POST("/run", cleanupHandler.RunManualCleanup) // Admin only
+			cleanupGroup.GET("/expiring-rooms", cleanupHandler.GetExpiringRoomWarnings)
+		}
+
 		// TODO: Add more endpoints in future phases
 		// v1.POST("/auth/anonymous", handlers.AnonymousAuthHandler)
-		// v1.GET("/stations", handlers.GetStationsHandler)
-		// v1.POST("/stations/:id/join", handlers.JoinStationHandler)
 	}
 
 	// WebSocket endpoint (Phase 0 - Day 2)
