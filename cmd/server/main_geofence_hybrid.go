@@ -10,10 +10,11 @@ import (
 	"github.com/ymow/messenger_protocol_research/internal/geofence"
 	"github.com/ymow/messenger_protocol_research/internal/matrix"
 	"github.com/ymow/messenger_protocol_research/internal/model"
+	"github.com/ymow/messenger_protocol_research/internal/websocket"
 )
 
 const (
-	version = "0.4.0-hybrid"
+	version = "0.5.0-websocket"
 	port    = "8080"
 )
 
@@ -38,10 +39,17 @@ func main() {
 	geofenceService.LoadStations(sampleStations)
 	fmt.Printf("   Loaded %d stations\n", len(sampleStations))
 
-	// 4. Initialize HTTP handlers
-	geofenceHandler := api.NewGeofenceHandler(geofenceService)
+	// 4. Initialize WebSocket Hub
+	fmt.Println("🔌 Initializing WebSocket Hub...")
+	wsHub := websocket.NewHub()
+	go wsHub.Run() // Start hub in background goroutine
+	fmt.Println("   WebSocket Hub running")
 
-	// 5. Setup routes
+	// 5. Initialize HTTP handlers
+	geofenceHandler := api.NewGeofenceHandler(geofenceService)
+	wsHandler := api.NewWebSocketHandler(wsHub, geofenceService)
+
+	// 6. Setup routes
 	mux := http.NewServeMux()
 
 	// Health check endpoints
@@ -53,7 +61,10 @@ func main() {
 	mux.HandleFunc("/api/v1/geofence/exit", enableCORS(geofenceHandler.ExitStation))
 	mux.HandleFunc("/api/v1/geofence/stats", enableCORS(geofenceHandler.GetStats))
 
-	// 6. Start server
+	// WebSocket endpoint
+	mux.HandleFunc("/ws", wsHandler.HandleWebSocket)
+
+	// 7. Start server
 	addr := ":" + port
 	fmt.Printf("\n✅ Server ready!\n")
 	fmt.Printf("   Address: http://localhost:%s\n", port)
@@ -63,12 +74,16 @@ func main() {
 	fmt.Println("   POST /api/v1/geofence/enter     - Enter station (Hybrid: P2P + Matrix)")
 	fmt.Println("   POST /api/v1/geofence/exit      - Exit station")
 	fmt.Println("   GET  /api/v1/geofence/stats     - Get statistics")
+	fmt.Println("   GET  /ws?session_id={id}        - WebSocket connection (real-time messaging)")
 	fmt.Println("\n🔧 Features Enabled:")
 	fmt.Println("   ✅ P2P Coordination")
 	fmt.Println("   ✅ Matrix Bridge Integration")
 	fmt.Println("   ✅ Dual-channel support")
 	fmt.Println("   ✅ Anonymous Matrix users")
 	fmt.Println("   ✅ Station room management")
+	fmt.Println("   ✅ WebSocket real-time messaging")
+	fmt.Println("   ✅ Station-based chat rooms")
+	fmt.Println("   ✅ Typing indicators & presence")
 	fmt.Println("\n🎯 Test with:")
 	fmt.Println("   curl -X POST http://localhost:8080/api/v1/geofence/enter \\")
 	fmt.Println("        -H 'Content-Type: application/json' \\")
