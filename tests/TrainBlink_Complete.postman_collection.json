@@ -1,0 +1,347 @@
+{
+	"info": {
+		"_postman_id": "trainblink-complete-002",
+		"name": "TrainBlink Server - Complete API",
+		"description": "完整的 TrainBlink Server API Collection\n\n包含：\n- 健康檢查\n- 客戶端註冊\n- 消息發送與接收\n- 完整的測試流程\n\n使用說明：\n1. 啟動 server: go run cmd/server/main_with_post.go\n2. 按順序執行 requests\n3. 客戶端 ID 會在註冊時返回\n\n版本: 0.1.0\n作者: TrainBlink Team",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Health & Status",
+			"item": [
+				{
+					"name": "Ping",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/ping",
+							"host": ["{{baseUrl}}"],
+							"path": ["ping"]
+						},
+						"description": "簡單的 ping 檢查 server 是否運行"
+					}
+				},
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						},
+						"description": "詳細的健康狀態檢查\n\n包括：\n- 運行時間 (uptime)\n- 當前客戶端數量\n- 消息總數\n- 總請求數"
+					}
+				},
+				{
+					"name": "Hello World",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/hello",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "hello"]
+						},
+						"description": "Hello World endpoint\n\n返回 server 版本和功能列表"
+					}
+				}
+			],
+			"description": "基本的健康檢查 endpoints"
+		},
+		{
+			"name": "2. Client Management",
+			"item": [
+				{
+					"name": "Register Alice (iOS)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.environment.set(\"alice_id\", jsonData.client.id);",
+									"console.log(\"Alice ID: \" + jsonData.client.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Alice\",\n  \"device_id\": \"iOS-1234\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clients",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clients"]
+						},
+						"description": "註冊 Alice (iOS 設備)\n\nClient ID 會自動保存到環境變量 {{alice_id}}"
+					}
+				},
+				{
+					"name": "Register Bob (Android)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.environment.set(\"bob_id\", jsonData.client.id);",
+									"console.log(\"Bob ID: \" + jsonData.client.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Bob\",\n  \"device_id\": \"Android-5678\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clients",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clients"]
+						},
+						"description": "註冊 Bob (Android 設備)\n\nClient ID 會自動保存到環境變量 {{bob_id}}"
+					}
+				},
+				{
+					"name": "List All Clients",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clients",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clients"]
+						},
+						"description": "列出所有已註冊的客戶端"
+					}
+				}
+			],
+			"description": "客戶端註冊和管理"
+		},
+		{
+			"name": "3. Messaging",
+			"item": [
+				{
+					"name": "Alice → Bob",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"from\": \"{{alice_id}}\",\n  \"to\": \"{{bob_id}}\",\n  \"text\": \"Hello Bob, this is Alice from Postman!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/messages",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "messages"]
+						},
+						"description": "Alice 發送消息給 Bob\n\n使用環境變量 {{alice_id}} 和 {{bob_id}}"
+					}
+				},
+				{
+					"name": "Bob → Alice",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"from\": \"{{bob_id}}\",\n  \"to\": \"{{alice_id}}\",\n  \"text\": \"Hi Alice, nice to meet you!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/messages",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "messages"]
+						},
+						"description": "Bob 回覆 Alice"
+					}
+				},
+				{
+					"name": "System Broadcast",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"from\": \"system\",\n  \"to\": \"all\",\n  \"text\": \"Welcome to TrainBlink! Server is running smoothly.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/messages",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "messages"]
+						},
+						"description": "系統廣播消息\n\n發送給所有用戶 (to: \"all\")"
+					}
+				},
+				{
+					"name": "List All Messages",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/messages",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "messages"]
+						},
+						"description": "獲取所有消息"
+					}
+				},
+				{
+					"name": "Get Alice's Messages",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/messages/user?id={{alice_id}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "messages", "user"],
+							"query": [
+								{
+									"key": "id",
+									"value": "{{alice_id}}",
+									"description": "Alice's client ID"
+								}
+							]
+						},
+						"description": "獲取 Alice 的所有消息\n\n包括：\n- Alice 發送的消息\n- 發給 Alice 的消息\n- 廣播消息"
+					}
+				},
+				{
+					"name": "Get Bob's Messages",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/messages/user?id={{bob_id}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "messages", "user"],
+							"query": [
+								{
+									"key": "id",
+									"value": "{{bob_id}}",
+									"description": "Bob's client ID"
+								}
+							]
+						},
+						"description": "獲取 Bob 的所有消息"
+					}
+				}
+			],
+			"description": "消息發送與接收"
+		},
+		{
+			"name": "4. Test Scenarios",
+			"item": [
+				{
+					"name": "Scenario: Invalid Client ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"from\": \"invalid-client-999\",\n  \"to\": \"{{bob_id}}\",\n  \"text\": \"This should fail\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/messages",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "messages"]
+						},
+						"description": "測試無效的發送者 ID\n\n預期: 400 Bad Request"
+					}
+				},
+				{
+					"name": "Scenario: Non-existent Recipient",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"from\": \"{{alice_id}}\",\n  \"to\": \"non-existent-client-999\",\n  \"text\": \"This should fail\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/messages",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "messages"]
+						},
+						"description": "測試發送給不存在的接收者\n\n預期: 404 Not Found"
+					}
+				}
+			],
+			"description": "錯誤場景測試"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "alice_id",
+			"value": "client-alice",
+			"type": "string"
+		},
+		{
+			"key": "bob_id",
+			"value": "client-bob",
+			"type": "string"
+		}
+	]
+}

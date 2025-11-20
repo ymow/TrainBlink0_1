@@ -1,0 +1,215 @@
+{
+	"info": {
+		"_postman_id": "trainblink-server-001",
+		"name": "TrainBlink Server API",
+		"description": "Complete API collection for TrainBlink Server - Phase 0\n\nIncludes:\n- Health checks\n- Hello World endpoints\n- Message relay (POST)\n- WebSocket testing\n- Connection management",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health & Status",
+			"item": [
+				{
+					"name": "Root - API Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": [""]
+						},
+						"description": "Get API information and available endpoints"
+					},
+					"response": []
+				},
+				{
+					"name": "Ping",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/ping",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["ping"]
+						},
+						"description": "Simple ping to check if server is alive"
+					},
+					"response": []
+				},
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/health",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["health"]
+						},
+						"description": "Detailed health status including uptime, connections, and request count"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "API v1",
+			"item": [
+				{
+					"name": "Hello World",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/v1/hello",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "hello"]
+						},
+						"description": "Hello World endpoint with server info and features"
+					},
+					"response": []
+				},
+				{
+					"name": "Welcome",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/v1/welcome?name=Alice&device_id=iOS-1234",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "welcome"],
+							"query": [
+								{
+									"key": "name",
+									"value": "Alice",
+									"description": "User name (optional)"
+								},
+								{
+									"key": "device_id",
+									"value": "iOS-1234",
+									"description": "Device ID (optional)"
+								}
+							]
+						},
+						"description": "Personalized welcome message with query parameters"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Connections",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/v1/connections",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "connections"]
+						},
+						"description": "Get list of all active WebSocket connections"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Messaging",
+			"item": [
+				{
+					"name": "Send Message - Broadcast",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"from\": \"postman-client\",\n  \"to\": \"all\",\n  \"message\": \"Hello everyone from Postman!\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/message",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "message"]
+						},
+						"description": "Broadcast a message to all connected WebSocket clients"
+					},
+					"response": []
+				},
+				{
+					"name": "Send Message - Specific Client",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"from\": \"postman-client\",\n  \"to\": \"client-12345\",\n  \"message\": \"Private message from Postman\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/message",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "message"]
+						},
+						"description": "Send a message to a specific WebSocket client by ID.\n\nNote: Replace 'client-12345' with an actual client ID from /api/v1/connections"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "wsUrl",
+			"value": "ws://localhost:8080/ws",
+			"type": "string"
+		}
+	]
+}
