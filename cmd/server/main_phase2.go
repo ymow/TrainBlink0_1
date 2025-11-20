@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ymow/messenger_protocol_research/internal/admin"
 	"github.com/ymow/messenger_protocol_research/internal/api"
 	"github.com/ymow/messenger_protocol_research/internal/auth"
 	"github.com/ymow/messenger_protocol_research/internal/cache"
@@ -87,8 +88,13 @@ func main() {
 	)
 	fmt.Println("   ✅ JWT service ready")
 
-	// Keep reference to prevent unused variable error (will be used for admin routes)
-	_ = jwtService
+	// ============================================================
+	// Phase 2: Initialize Admin Repository & Service
+	// ============================================================
+	fmt.Println("\n👤 Initializing Admin service...")
+	adminRepo := admin.NewRepository(db)
+	adminService := admin.NewService(adminRepo, jwtService, redisService)
+	fmt.Println("   ✅ Admin service ready")
 
 	// ============================================================
 	// Phase 1: Initialize Matrix Bridge Service
@@ -125,6 +131,7 @@ func main() {
 	geofenceHandler := api.NewGeofenceHandler(geofenceService)
 	geofenceHandler.SetWebSocketHub(wsHub)
 	wsHandler := api.NewWebSocketHandler(wsHub, geofenceService)
+	adminHandler := admin.NewHandler(adminService)
 
 	// ============================================================
 	// Setup Router with Middleware
@@ -143,10 +150,31 @@ func main() {
 	// Phase 1: WebSocket endpoint (public)
 	mux.HandleFunc("/ws", wsHandler.HandleWebSocket)
 
-	// Phase 2: Admin endpoints will be added here
-	// TODO: Add admin authentication endpoints
-	// TODO: Add admin user management endpoints
-	// TODO: Add admin analytics endpoints
+	// Phase 2: Admin authentication endpoints (public)
+	mux.HandleFunc("/api/v1/admin/login", adminHandler.Login)
+	mux.HandleFunc("/api/v1/admin/refresh", adminHandler.RefreshToken)
+
+	// Phase 2: Admin authenticated endpoints
+	adminAuthMiddleware := middleware.AdminAuthMiddleware(jwtService, redisService)
+
+	// Logout (requires auth)
+	mux.Handle("/api/v1/admin/logout", adminAuthMiddleware(http.HandlerFunc(adminHandler.Logout)))
+
+	// Admin management endpoints (requires admin role)
+	mux.Handle("/api/v1/admin/create",
+		adminAuthMiddleware(
+			middleware.RequirePermission("admin.create")(
+				http.HandlerFunc(adminHandler.CreateAdmin))))
+
+	mux.Handle("/api/v1/admin/list",
+		adminAuthMiddleware(
+			middleware.RequirePermission("admin.view")(
+				http.HandlerFunc(adminHandler.ListAdmins))))
+
+	mux.Handle("/api/v1/admin/roles",
+		adminAuthMiddleware(
+			middleware.RequirePermission("admin.view")(
+				http.HandlerFunc(adminHandler.ListRoles))))
 
 	// ============================================================
 	// Apply Global Middleware Stack
@@ -164,12 +192,20 @@ func main() {
 	fmt.Printf("\n✅ Server ready!\n")
 	fmt.Printf("   Address: http://localhost%s\n", cfg.Server.Port)
 	fmt.Println("\n📚 Available Endpoints:")
-	fmt.Println("   GET  /ping                      - Ping test")
-	fmt.Println("   GET  /health                    - Health check + service status")
-	fmt.Println("   POST /api/v1/geofence/enter     - Enter station (Phase 1)")
-	fmt.Println("   POST /api/v1/geofence/exit      - Exit station (Phase 1)")
-	fmt.Println("   GET  /api/v1/geofence/stats     - Get statistics (Phase 1)")
-	fmt.Println("   GET  /ws?session_id={id}        - WebSocket connection (Phase 1)")
+	fmt.Println("\n  Phase 1: Geofencing & WebSocket")
+	fmt.Println("   GET  /ping                          - Ping test")
+	fmt.Println("   GET  /health                        - Health check + service status")
+	fmt.Println("   POST /api/v1/geofence/enter         - Enter station")
+	fmt.Println("   POST /api/v1/geofence/exit          - Exit station")
+	fmt.Println("   GET  /api/v1/geofence/stats         - Get statistics")
+	fmt.Println("   GET  /ws?session_id={id}            - WebSocket connection")
+	fmt.Println("\n  Phase 2: Admin Authentication")
+	fmt.Println("   POST /api/v1/admin/login            - Admin login")
+	fmt.Println("   POST /api/v1/admin/refresh          - Refresh access token")
+	fmt.Println("   POST /api/v1/admin/logout           - Admin logout [Auth Required]")
+	fmt.Println("   POST /api/v1/admin/create           - Create new admin [Auth + Permission]")
+	fmt.Println("   GET  /api/v1/admin/list             - List all admins [Auth + Permission]")
+	fmt.Println("   GET  /api/v1/admin/roles            - List all roles [Auth + Permission]")
 	fmt.Println()
 	fmt.Println("🔧 Phase 1 Features:")
 	fmt.Println("   ✅ P2P Coordination")
@@ -182,8 +218,9 @@ func main() {
 	fmt.Println("   ✅ Redis Cache & Sessions")
 	fmt.Println("   ✅ JWT Authentication")
 	fmt.Println("   ✅ Security Middleware")
-	fmt.Println("   ⏳ Admin API (coming soon)")
-	fmt.Println("   ⏳ User Management (coming soon)")
+	fmt.Println("   ✅ Admin API (Login, Logout, Refresh)")
+	fmt.Println("   ✅ RBAC with Permissions")
+	fmt.Println("   ⏳ User Management (coming next)")
 	fmt.Println()
 
 	addr := cfg.Server.Port
