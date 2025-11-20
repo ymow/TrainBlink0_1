@@ -13,13 +13,25 @@ import (
 // GeofenceHandler handles geofencing HTTP requests
 type GeofenceHandler struct {
 	service *geofence.Service
+	wsHub   WebSocketHub // Interface for WebSocket Hub
+}
+
+// WebSocketHub interface for getting WebSocket statistics
+type WebSocketHub interface {
+	GetDetailedStats() map[string]interface{}
 }
 
 // NewGeofenceHandler creates a new geofence handler
 func NewGeofenceHandler(service *geofence.Service) *GeofenceHandler {
 	return &GeofenceHandler{
 		service: service,
+		wsHub:   nil, // Will be set later
 	}
+}
+
+// SetWebSocketHub sets the WebSocket Hub for statistics
+func (h *GeofenceHandler) SetWebSocketHub(hub WebSocketHub) {
+	h.wsHub = hub
 }
 
 // EnterStation handles POST /api/v1/geofence/enter
@@ -137,6 +149,12 @@ func (h *GeofenceHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	stats := h.service.GetStats()
+
+	// Add WebSocket statistics if available
+	if h.wsHub != nil {
+		wsStats := h.wsHub.GetDetailedStats()
+		stats["websocket"] = wsStats
+	}
 
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"status": "success",

@@ -315,6 +315,61 @@ func (h *Hub) GetClientsInStation(stationID string) int {
 	return 0
 }
 
+// GetDetailedStats returns detailed WebSocket statistics including client info
+func (h *Hub) GetDetailedStats() map[string]interface{} {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	h.stats.mu.RLock()
+	defer h.stats.mu.RUnlock()
+
+	// Collect client statistics
+	clientStats := make([]map[string]interface{}, 0)
+	totalMessages := int64(0)
+	totalBroadcasts := int64(0)
+
+	for client := range h.clients {
+		stats := client.GetStats()
+		clientStats = append(clientStats, stats)
+		totalMessages += stats["total_messages"].(int64)
+		totalBroadcasts += stats["total_broadcasts"].(int64)
+	}
+
+	// Calculate average uptime
+	avgUptime := 0.0
+	if len(clientStats) > 0 {
+		totalUptime := 0.0
+		for _, stats := range clientStats {
+			totalUptime += stats["uptime_seconds"].(float64)
+		}
+		avgUptime = totalUptime / float64(len(clientStats))
+	}
+
+	// Copy clients by station map
+	clientsByStation := make(map[string]int)
+	for k, v := range h.stats.ClientsByStation {
+		clientsByStation[k] = v
+	}
+
+	return map[string]interface{}{
+		"connections": map[string]interface{}{
+			"total":      len(h.clients),
+			"by_station": clientsByStation,
+			"avg_uptime": avgUptime,
+		},
+		"messages": map[string]interface{}{
+			"handled":         h.stats.MessagesHandled,
+			"total_sent":      totalMessages,
+			"total_broadcast": totalBroadcasts,
+		},
+		"rate_limits": map[string]interface{}{
+			"max_messages_per_minute":   maxMessagesPerMinute,
+			"max_broadcasts_per_minute": maxBroadcastsPerMinute,
+		},
+		"clients": clientStats,
+	}
+}
+
 // RegisterClient sends a client to the register channel
 func (h *Hub) RegisterClient(client *Client) {
 	h.register <- client

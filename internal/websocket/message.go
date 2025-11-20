@@ -40,6 +40,24 @@ func (h *MessageHandler) HandleMessage(client *Client, msg *model.ClientMessage)
 
 // handleChatMessage handles regular chat messages
 func (h *MessageHandler) handleChatMessage(client *Client, msg *model.ClientMessage) {
+	// Check rate limit
+	if !client.checkRateLimit(false) {
+		client.sendError("RATE_LIMIT_EXCEEDED", "Message rate limit exceeded. Please slow down.")
+		fmt.Printf("Rate limit exceeded for user %s\n", client.UserID)
+		return
+	}
+
+	// Validate message content
+	if len(msg.Content) == 0 {
+		client.sendError("EMPTY_MESSAGE", "Message content cannot be empty")
+		return
+	}
+
+	if len(msg.Content) > maxMessageSize {
+		client.sendError("MESSAGE_TOO_LARGE", "Message content exceeds maximum size")
+		return
+	}
+
 	// Create server message
 	serverMsg := &model.ServerMessage{
 		ID:        generateMessageID(),
@@ -74,6 +92,24 @@ func (h *MessageHandler) handleChatMessage(client *Client, msg *model.ClientMess
 
 // handleBroadcastMessage handles station-wide broadcast messages
 func (h *MessageHandler) handleBroadcastMessage(client *Client, msg *model.ClientMessage) {
+	// Check rate limit (broadcasts have stricter limits)
+	if !client.checkRateLimit(true) {
+		client.sendError("RATE_LIMIT_EXCEEDED", "Broadcast rate limit exceeded. Please slow down.")
+		fmt.Printf("Broadcast rate limit exceeded for user %s\n", client.UserID)
+		return
+	}
+
+	// Validate message content
+	if len(msg.Content) == 0 {
+		client.sendError("EMPTY_MESSAGE", "Broadcast content cannot be empty")
+		return
+	}
+
+	if len(msg.Content) > maxMessageSize {
+		client.sendError("MESSAGE_TOO_LARGE", "Broadcast content exceeds maximum size")
+		return
+	}
+
 	// Create server message
 	serverMsg := &model.ServerMessage{
 		ID:        generateMessageID(),

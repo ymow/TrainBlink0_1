@@ -21,6 +21,11 @@ const (
 
 	// Maximum message size allowed from peer
 	maxMessageSize = 8192 // 8KB
+
+	// Rate limiting
+	maxMessagesPerMinute   = 60  // Regular messages
+	maxBroadcastsPerMinute = 10  // Broadcast messages
+	rateLimitWindow        = time.Minute
 )
 
 // Client is a middleman between the websocket connection and the hub
@@ -44,12 +49,20 @@ type Client struct {
 	ConnectedAt time.Time
 	LastPingAt  time.Time
 
+	// Rate limiting
+	messageCount     int       // Messages sent in current window
+	broadcastCount   int       // Broadcasts sent in current window
+	rateLimitReset   time.Time // When to reset counters
+	totalMessages    int64     // Total messages sent (lifetime)
+	totalBroadcasts  int64     // Total broadcasts sent (lifetime)
+
 	// Message handler
 	messageHandler *MessageHandler
 }
 
 // NewClient creates a new Client
 func NewClient(conn *websocket.Conn, hub *Hub, userID, deviceID, sessionID, stationID string, messageHandler *MessageHandler) *Client {
+	now := time.Now()
 	return &Client{
 		conn:           conn,
 		send:           make(chan *model.ServerMessage, 256),
@@ -58,8 +71,9 @@ func NewClient(conn *websocket.Conn, hub *Hub, userID, deviceID, sessionID, stat
 		DeviceID:       deviceID,
 		SessionID:      sessionID,
 		StationID:      stationID,
-		ConnectedAt:    time.Now(),
-		LastPingAt:     time.Now(),
+		ConnectedAt:    now,
+		LastPingAt:     now,
+		rateLimitReset: now.Add(rateLimitWindow),
 		messageHandler: messageHandler,
 	}
 }
@@ -180,5 +194,49 @@ func (c *Client) sendAck(originalMessageID string) {
 	case c.send <- ackMsg:
 	default:
 		fmt.Printf("Failed to send ack to client: send channel full\n")
+	}
+}
+
+// checkRateLimit checks if the client has exceeded rate limits
+// Returns true if allowed, false if rate limit exceeded
+func (c *Client) checkRateLimit(isBroadcast bool) bool {
+	now := time.Now()
+
+	// Reset counters if window has expired
+	if now.After(c.rateLimitReset) {
+		c.messageCount = 0
+		c.broadcastCount = 0
+		c.rateLimitReset = now.Add(rateLimitWindow)
+	}
+
+	// Check broadcast rate limit
+	if isBroadcast {
+		if c.broadcastCount >= maxBroadcastsPerMinute {
+			return false
+		}
+		c.broadcastCount++
+		c.totalBroadcasts++
+		return true
+	}
+
+	// Check regular message rate limit
+	if c.messageCount >= maxMessagesPerMinute {
+		return false
+	}
+	c.messageCount++
+	c.totalMessages++
+	return true
+}
+
+// GetStats returns client statistics
+func (c *Client) GetStats() map[string]interface{} {
+	return map[string]interface{}{
+		"user_id":          c.UserID,
+		"station_id":       c.StationID,
+		"connected_at":     c.ConnectedAt,
+		"uptime_seconds":   time.Since(c.ConnectedAt).Seconds(),
+		"total_messages":   c.totalMessages,
+		"total_broadcasts": c.totalBroadcasts,
+		"last_ping_at":     c.LastPingAt,
 	}
 }

@@ -47,6 +47,7 @@ func main() {
 
 	// 5. Initialize HTTP handlers
 	geofenceHandler := api.NewGeofenceHandler(geofenceService)
+	geofenceHandler.SetWebSocketHub(wsHub) // Set WebSocket Hub for stats integration
 	wsHandler := api.NewWebSocketHandler(wsHub, geofenceService)
 
 	// 6. Setup routes
