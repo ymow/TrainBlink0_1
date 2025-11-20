@@ -1,0 +1,16 @@
+module github.com/ymow/messenger_protocol_research
+
+go 1.21
+
+require (
+	github.com/gin-gonic/gin v1.10.0
+	github.com/gorilla/websocket v1.5.1
+	github.com/lib/pq v1.10.9
+	github.com/redis/go-redis/v9 v9.4.0
+	github.com/golang-jwt/jwt/v5 v5.2.0
+	github.com/google/uuid v1.5.0
+	go.uber.org/zap v1.26.0
+	github.com/spf13/viper v1.18.2
+	gorm.io/gorm v1.25.5
+	gorm.io/driver/postgres v1.5.4
+)
