@@ -80,16 +80,18 @@ func (s *Service) StartTrip(ctx context.Context, req *StartTripRequest) (*model.
 	}
 
 	// Cache in Redis for fast lookup (BLE ID → Trip ID)
-	cacheKey := fmt.Sprintf("trip:ble:%s", bleID)
-	if err := s.redis.Set(ctx, cacheKey, trip.ID.String(), 24*time.Hour).Err(); err != nil {
-		// Log but don't fail
-		fmt.Printf("Warning: failed to cache trip: %v\n", err)
-	}
+	if s.redis != nil {
+		cacheKey := fmt.Sprintf("trip:ble:%s", bleID)
+		if err := s.redis.Set(ctx, cacheKey, trip.ID.String(), 24*time.Hour).Err(); err != nil {
+			// Log but don't fail
+			fmt.Printf("Warning: failed to cache trip: %v\n", err)
+		}
 
-	// Cache user's active trip
-	userCacheKey := fmt.Sprintf("trip:user:%s:active", req.UserID.String())
-	if err := s.redis.Set(ctx, userCacheKey, trip.ID.String(), 24*time.Hour).Err(); err != nil {
-		fmt.Printf("Warning: failed to cache user trip: %v\n", err)
+		// Cache user's active trip
+		userCacheKey := fmt.Sprintf("trip:user:%s:active", req.UserID.String())
+		if err := s.redis.Set(ctx, userCacheKey, trip.ID.String(), 24*time.Hour).Err(); err != nil {
+			fmt.Printf("Warning: failed to cache user trip: %v\n", err)
+		}
 	}
 
 	return trip, nil
