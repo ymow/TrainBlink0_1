@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with PostGIS
+  postgres:
+    image: postgis/postgis:15-3.3-alpine
+    container_name: trainblink-postgres
+    environment:
+      POSTGRES_DB: trainblink
+      POSTGRES_USER: trainblink_user
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    networks:
+      - trainblink-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trainblink_user -d trainblink"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: trainblink-redis
+    command: redis-server --requirepass dev_password
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - trainblink-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # TrainBlink Go Server (when implemented)
+  # Uncomment after implementing Phase 2 services
+  # go-server:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: trainblink-server
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     DB_HOST: postgres
+  #     DB_PORT: 5432
+  #     DB_USER: trainblink_user
+  #     DB_PASSWORD: dev_password
+  #     DB_NAME: trainblink
+  #     REDIS_ADDR: redis:6379
+  #     REDIS_PASSWORD: dev_password
+  #     JWT_SECRET_KEY: dev_jwt_secret_key_change_in_production
+  #     SERVER_ENV: development
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - trainblink-network
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  trainblink-network:
+    driver: bridge

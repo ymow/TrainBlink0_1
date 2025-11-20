@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS station_analytics CASCADE;
+DROP TABLE IF EXISTS user_sessions CASCADE;
