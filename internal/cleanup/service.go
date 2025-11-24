@@ -217,9 +217,10 @@ func (s *Service) GetCleanupStats(ctx context.Context) (*CleanupStats, error) {
 
 	// Trip stats
 	var expiredTrips int64
+	twoHoursAgo := time.Now().Add(-2 * time.Hour)
 	if err := s.db.WithContext(ctx).
 		Table("trips").
-		Where("status = ? AND estimated_arrival < NOW() - INTERVAL '2 hours'", "active").
+		Where("status = ? AND estimated_arrival < ?", "active", twoHoursAgo).
 		Count(&expiredTrips).Error; err != nil {
 		return nil, fmt.Errorf("failed to count expired trips: %w", err)
 	}
@@ -227,9 +228,10 @@ func (s *Service) GetCleanupStats(ctx context.Context) (*CleanupStats, error) {
 
 	// Room stats
 	var expiredRooms int64
+	now := time.Now()
 	if err := s.db.WithContext(ctx).
 		Table("matrix_ephemeral_rooms").
-		Where("expires_at < NOW() AND deleted_at IS NULL").
+		Where("expires_at < ? AND deleted_at IS NULL", now).
 		Count(&expiredRooms).Error; err != nil {
 		return nil, fmt.Errorf("failed to count expired rooms: %w", err)
 	}

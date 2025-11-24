@@ -178,8 +178,9 @@ func (erm *EphemeralRoomManager) GetEphemeralRoomsBetweenTrips(ctx context.Conte
 // GetActiveEphemeralRoomsForTrip gets all active ephemeral rooms for a trip
 func (erm *EphemeralRoomManager) GetActiveEphemeralRoomsForTrip(ctx context.Context, tripID uuid.UUID) ([]model.MatrixEphemeralRoom, error) {
 	var rooms []model.MatrixEphemeralRoom
+	now := time.Now()
 	err := erm.db.WithContext(ctx).
-		Where("(trip1_id = ? OR trip2_id = ?) AND deleted_at IS NULL AND expires_at > NOW()", tripID, tripID).
+		Where("(trip1_id = ? OR trip2_id = ?) AND deleted_at IS NULL AND expires_at > ?", tripID, tripID, now).
 		Find(&rooms).Error
 
 	if err != nil {
@@ -211,8 +212,9 @@ func (erm *EphemeralRoomManager) IncrementMessageCount(ctx context.Context, room
 func (erm *EphemeralRoomManager) DeleteExpiredRooms(ctx context.Context) (int, error) {
 	// Find expired rooms that haven't been deleted yet
 	var expiredRooms []model.MatrixEphemeralRoom
+	now := time.Now()
 	err := erm.db.WithContext(ctx).
-		Where("expires_at < NOW() AND deleted_at IS NULL AND auto_delete_queued = false").
+		Where("expires_at < ? AND deleted_at IS NULL AND auto_delete_queued = false", now).
 		Find(&expiredRooms).Error
 
 	if err != nil {
@@ -309,9 +311,10 @@ func (erm *EphemeralRoomManager) GetEphemeralRoomStats(ctx context.Context) (map
 
 	// Active rooms (not expired, not deleted)
 	var activeRooms int64
+	now := time.Now()
 	if err := erm.db.WithContext(ctx).
 		Model(&model.MatrixEphemeralRoom{}).
-		Where("expires_at > NOW() AND deleted_at IS NULL").
+		Where("expires_at > ? AND deleted_at IS NULL", now).
 		Count(&activeRooms).Error; err != nil {
 		return nil, err
 	}
@@ -321,7 +324,7 @@ func (erm *EphemeralRoomManager) GetEphemeralRoomStats(ctx context.Context) (map
 	var expiredRooms int64
 	if err := erm.db.WithContext(ctx).
 		Model(&model.MatrixEphemeralRoom{}).
-		Where("expires_at < NOW() AND deleted_at IS NULL").
+		Where("expires_at < ? AND deleted_at IS NULL", now).
 		Count(&expiredRooms).Error; err != nil {
 		return nil, err
 	}
@@ -355,11 +358,12 @@ func (erm *EphemeralRoomManager) GetEphemeralRoomStats(ctx context.Context) (map
 
 // GetExpiringSoonRooms gets rooms expiring within the given duration
 func (erm *EphemeralRoomManager) GetExpiringSoonRooms(ctx context.Context, within time.Duration) ([]model.MatrixEphemeralRoom, error) {
-	cutoffTime := time.Now().Add(within)
+	now := time.Now()
+	cutoffTime := now.Add(within)
 
 	var rooms []model.MatrixEphemeralRoom
 	err := erm.db.WithContext(ctx).
-		Where("expires_at < ? AND expires_at > NOW() AND deleted_at IS NULL", cutoffTime).
+		Where("expires_at < ? AND expires_at > ? AND deleted_at IS NULL", cutoffTime, now).
 		Order("expires_at ASC").
 		Find(&rooms).Error
 

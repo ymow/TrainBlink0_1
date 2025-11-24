@@ -142,24 +142,26 @@ func (s *Service) EndTrip(ctx context.Context, req *EndTripRequest) (*model.Trip
 
 // GetActiveTrip retrieves user's current active trip
 func (s *Service) GetActiveTrip(ctx context.Context, userID uuid.UUID) (*model.Trip, error) {
-	// Try cache first
-	userCacheKey := fmt.Sprintf("trip:user:%s:active", userID.String())
-	tripIDStr, err := s.redis.Get(ctx, userCacheKey).Result()
+	// Try cache first (skip if Redis is nil, e.g., in tests)
+	if s.redis != nil {
+		userCacheKey := fmt.Sprintf("trip:user:%s:active", userID.String())
+		tripIDStr, err := s.redis.Get(ctx, userCacheKey).Result()
 
-	if err == nil && tripIDStr != "" {
-		// Found in cache, fetch from DB
-		tripID, err := uuid.Parse(tripIDStr)
-		if err == nil {
-			var trip model.Trip
-			if err := s.db.WithContext(ctx).First(&trip, tripID).Error; err == nil {
-				return &trip, nil
+		if err == nil && tripIDStr != "" {
+			// Found in cache, fetch from DB
+			tripID, err := uuid.Parse(tripIDStr)
+			if err == nil {
+				var trip model.Trip
+				if err := s.db.WithContext(ctx).First(&trip, tripID).Error; err == nil {
+					return &trip, nil
+				}
 			}
 		}
 	}
 
 	// Not in cache or cache miss, query DB
 	var trip model.Trip
-	err = s.db.WithContext(ctx).
+	err := s.db.WithContext(ctx).
 		Where("user_id = ? AND status = ?", userID, model.TripStatusActive).
 		Order("created_at DESC").
 		First(&trip).Error
@@ -171,8 +173,11 @@ func (s *Service) GetActiveTrip(ctx context.Context, userID uuid.UUID) (*model.T
 		return nil, fmt.Errorf("failed to fetch active trip: %w", err)
 	}
 
-	// Update cache
-	s.redis.Set(ctx, userCacheKey, trip.ID.String(), 24*time.Hour)
+	// Update cache (skip if Redis is nil, e.g., in tests)
+	if s.redis != nil {
+		userCacheKey := fmt.Sprintf("trip:user:%s:active", userID.String())
+		s.redis.Set(ctx, userCacheKey, trip.ID.String(), 24*time.Hour)
+	}
 
 	return &trip, nil
 }
@@ -370,7 +375,7 @@ func (s *Service) CleanupExpiredTrips(ctx context.Context) (int, error) {
 		Where("status = ? AND estimated_arrival < ?", model.TripStatusActive, cutoffTime).
 		Updates(map[string]interface{}{
 			"status":          model.TripStatusEnded,
-			"actual_end_time": gorm.Expr("NOW()"),
+			"actual_end_time": time.Now(),
 		})
 
 	if result.Error != nil {

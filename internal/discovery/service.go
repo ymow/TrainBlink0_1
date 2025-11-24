@@ -97,9 +97,10 @@ func (s *Service) GetDiscoveryStats(ctx context.Context) (map[string]interface{}
 
 	// Discoveries last 24 hours
 	var discoveries24h int64
+	last24Hours := time.Now().Add(-24 * time.Hour)
 	if err := s.db.WithContext(ctx).
 		Model(&model.Discovery{}).
-		Where("discovered_at > NOW() - INTERVAL '24 hours'").
+		Where("discovered_at > ?", last24Hours).
 		Count(&discoveries24h).Error; err != nil {
 		return nil, err
 	}
@@ -281,10 +282,11 @@ type RoutePopularity struct {
 func (s *Service) GetDiscoveryTrends(ctx context.Context, days int) ([]DailyTrend, error) {
 	var trends []DailyTrend
 
+	cutoffDate := time.Now().AddDate(0, 0, -days)
 	err := s.db.WithContext(ctx).
 		Model(&model.Discovery{}).
 		Select("DATE(discovered_at) as date, COUNT(*) as count").
-		Where("discovered_at > NOW() - INTERVAL '? days'", days).
+		Where("discovered_at > ?", cutoffDate).
 		Group("date").
 		Order("date DESC").
 		Find(&trends).Error
