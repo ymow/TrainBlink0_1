@@ -28,10 +28,10 @@ const (
 )
 
 var (
-	startTime     = time.Now()
-	requestCount  = 0
-	messageStore  = &MessageStore{messages: make([]Message, 0)}
-	clientStore   = &ClientStore{clients: make(map[string]*Client)}
+	startTime    = time.Now()
+	requestCount = 0
+	messageStore = &MessageStore{messages: make([]Message, 0)}
+	clientStore  = &ClientStore{clients: make(map[string]*Client)}
 )
 
 // Models
@@ -140,12 +140,12 @@ type PingResponse struct {
 }
 
 type HealthResponse struct {
-	Status         string    `json:"status"`
-	Timestamp      time.Time `json:"timestamp"`
-	Uptime         float64   `json:"uptime"`
-	Clients        int       `json:"clients"`
-	Messages       int       `json:"messages"`
-	TotalRequests  int       `json:"total_requests"`
+	Status        string    `json:"status"`
+	Timestamp     time.Time `json:"timestamp"`
+	Uptime        float64   `json:"uptime"`
+	Clients       int       `json:"clients"`
+	Messages      int       `json:"messages"`
+	TotalRequests int       `json:"total_requests"`
 }
 
 type HelloResponse struct {
@@ -201,15 +201,15 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		"message": "TrainBlink Server API",
 		"version": version,
 		"endpoints": map[string]string{
-			"GET /ping":                "Health check",
-			"GET /health":              "Detailed health status",
-			"GET /api/v1/hello":        "Hello World",
-			"GET /api/v1/welcome":      "Welcome message",
-			"POST /api/v1/clients":     "Register client",
-			"GET /api/v1/clients":      "List clients",
-			"GET /api/v1/clients/{id}": "Get client",
-			"POST /api/v1/messages":    "Send message",
-			"GET /api/v1/messages":     "Get all messages",
+			"GET /ping":                 "Health check",
+			"GET /health":               "Detailed health status",
+			"GET /api/v1/hello":         "Hello World",
+			"GET /api/v1/welcome":       "Welcome message",
+			"POST /api/v1/clients":      "Register client",
+			"GET /api/v1/clients":       "List clients",
+			"GET /api/v1/clients/{id}":  "Get client",
+			"POST /api/v1/messages":     "Send message",
+			"GET /api/v1/messages":      "Get all messages",
 			"GET /api/v1/messages/{id}": "Get messages for user",
 		},
 	})

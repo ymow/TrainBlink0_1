@@ -13,12 +13,12 @@ import (
 
 // Handler handles MLS HTTP API endpoints
 type Handler struct {
-	db              *gorm.DB
-	redis           *redis.Client
-	groupMgr        *GroupManager
-	keyPackageSvc   *KeyPackageService
-	deliverySvc     *DeliveryService
-	config          *MLSConfig
+	db            *gorm.DB
+	redis         *redis.Client
+	groupMgr      *GroupManager
+	keyPackageSvc *KeyPackageService
+	deliverySvc   *DeliveryService
+	config        *MLSConfig
 }
 
 // NewHandler creates a new MLS HTTP handler
@@ -121,11 +121,11 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"group_id":      group.GroupID,
-		"epoch":         group.Epoch,
-		"cipher_suite":  group.CipherSuite,
-		"member_count":  group.MemberCount,
-		"created_at":    group.CreatedAt,
+		"group_id":     group.GroupID,
+		"epoch":        group.Epoch,
+		"cipher_suite": group.CipherSuite,
+		"member_count": group.MemberCount,
+		"created_at":   group.CreatedAt,
 	})
 }
 
@@ -140,15 +140,15 @@ func (h *Handler) GetGroup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"group_id":          group.GroupID,
-		"station_id":        group.StationID,
-		"epoch":             group.Epoch,
-		"cipher_suite":      group.CipherSuite,
-		"protocol_version":  group.ProtocolVersion,
-		"member_count":      group.MemberCount,
-		"is_active":         group.IsActive,
-		"created_at":        group.CreatedAt,
-		"updated_at":        group.UpdatedAt,
+		"group_id":         group.GroupID,
+		"station_id":       group.StationID,
+		"epoch":            group.Epoch,
+		"cipher_suite":     group.CipherSuite,
+		"protocol_version": group.ProtocolVersion,
+		"member_count":     group.MemberCount,
+		"is_active":        group.IsActive,
+		"created_at":       group.CreatedAt,
+		"updated_at":       group.UpdatedAt,
 	})
 }
 

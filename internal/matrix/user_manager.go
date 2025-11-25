@@ -13,13 +13,13 @@ import (
 
 // UserManager handles Matrix user operations
 type UserManager struct {
-	client       *Client
-	db           *gorm.DB
+	client        *Client
+	db            *gorm.DB
 	homeserverURL string
 	serverName    string
 
 	// User cache
-	userCache map[string]*MatrixUser // firebaseUID -> MatrixUser
+	userCache  map[string]*MatrixUser // firebaseUID -> MatrixUser
 	cacheMutex sync.RWMutex
 }
 
@@ -313,9 +313,9 @@ type MatrixUser struct {
 	AccessToken  string
 	DeviceID     string
 	Password     string // Stored encrypted
-	IsActive     bool  `gorm:"default:true"`
-	CreatedAt    int64 `gorm:"autoCreateTime:milli"`
-	UpdatedAt    int64 `gorm:"autoUpdateTime:milli"`
+	IsActive     bool   `gorm:"default:true"`
+	CreatedAt    int64  `gorm:"autoCreateTime:milli"`
+	UpdatedAt    int64  `gorm:"autoUpdateTime:milli"`
 }
 
 // TableName specifies the table name for MatrixUser

@@ -17,11 +17,11 @@ type Service struct {
 	matrixBridge *matrix.BridgeService
 
 	// In-memory storage (will be replaced with PostgreSQL/Redis in production)
-	stations      map[string]*model.Station
-	sessions      map[uuid.UUID]*model.UserSession
+	stations       map[string]*model.Station
+	sessions       map[uuid.UUID]*model.UserSession
 	activeSessions map[string]uuid.UUID // userID -> sessionID
-	stationMutex  sync.RWMutex
-	sessionMutex  sync.RWMutex
+	stationMutex   sync.RWMutex
+	sessionMutex   sync.RWMutex
 }
 
 // NewService creates a new geofencing service
@@ -319,9 +319,9 @@ func (s *Service) GetStats() map[string]interface{} {
 	matrixStats := s.matrixBridge.GetStats()
 
 	return map[string]interface{}{
-		"total_stations":    len(s.stations),
-		"total_sessions":    len(s.sessions),
-		"active_sessions":   activeSessions,
-		"matrix_stats":      matrixStats,
+		"total_stations":  len(s.stations),
+		"total_sessions":  len(s.sessions),
+		"active_sessions": activeSessions,
+		"matrix_stats":    matrixStats,
 	}
 }

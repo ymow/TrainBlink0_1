@@ -18,11 +18,11 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	UserID       string `json:"user_id"`
-	AccessToken  string `json:"access_token"`
-	DeviceID     string `json:"device_id"`
-	HomeServer   string `json:"home_server"`
-	WellKnown    interface{} `json:"well_known,omitempty"`
+	UserID      string      `json:"user_id"`
+	AccessToken string      `json:"access_token"`
+	DeviceID    string      `json:"device_id"`
+	HomeServer  string      `json:"home_server"`
+	WellKnown   interface{} `json:"well_known,omitempty"`
 }
 
 type RegisterRequest struct {
@@ -94,23 +94,23 @@ type StateEvent struct {
 // ============================================================
 
 type SendMessageRequest struct {
-	MsgType       string      `json:"msgtype"`
-	Body          string      `json:"body"`
-	Format        string      `json:"format,omitempty"`
-	FormattedBody string      `json:"formatted_body,omitempty"`
-	URL           string      `json:"url,omitempty"`
-	Info          *MediaInfo  `json:"info,omitempty"`
-	GeoURI        string      `json:"geo_uri,omitempty"`
-	Filename      string      `json:"filename,omitempty"`
+	MsgType       string     `json:"msgtype"`
+	Body          string     `json:"body"`
+	Format        string     `json:"format,omitempty"`
+	FormattedBody string     `json:"formatted_body,omitempty"`
+	URL           string     `json:"url,omitempty"`
+	Info          *MediaInfo `json:"info,omitempty"`
+	GeoURI        string     `json:"geo_uri,omitempty"`
+	Filename      string     `json:"filename,omitempty"`
 }
 
 type MediaInfo struct {
-	MimeType      string      `json:"mimetype,omitempty"`
-	Size          int64       `json:"size,omitempty"`
-	Width         int         `json:"w,omitempty"`
-	Height        int         `json:"h,omitempty"`
-	ThumbnailURL  string      `json:"thumbnail_url,omitempty"`
-	ThumbnailInfo *MediaInfo  `json:"thumbnail_info,omitempty"`
+	MimeType      string     `json:"mimetype,omitempty"`
+	Size          int64      `json:"size,omitempty"`
+	Width         int        `json:"w,omitempty"`
+	Height        int        `json:"h,omitempty"`
+	ThumbnailURL  string     `json:"thumbnail_url,omitempty"`
+	ThumbnailInfo *MediaInfo `json:"thumbnail_info,omitempty"`
 }
 
 type SendMessageResponse struct {
@@ -276,9 +276,9 @@ type PresenceRequest struct {
 }
 
 type PresenceResponse struct {
-	Presence       string `json:"presence"`
-	LastActiveAgo  int64  `json:"last_active_ago,omitempty"`
-	StatusMsg      string `json:"status_msg,omitempty"`
+	Presence        string `json:"presence"`
+	LastActiveAgo   int64  `json:"last_active_ago,omitempty"`
+	StatusMsg       string `json:"status_msg,omitempty"`
 	CurrentlyActive bool   `json:"currently_active,omitempty"`
 }
 
@@ -300,21 +300,21 @@ func (e *MatrixError) String() string {
 // ============================================================
 
 type Filter struct {
-	Room          *RoomFilter         `json:"room,omitempty"`
-	Presence      *EventFilter        `json:"presence,omitempty"`
-	AccountData   *EventFilter        `json:"account_data,omitempty"`
-	EventFormat   string              `json:"event_format,omitempty"`
-	EventFields   []string            `json:"event_fields,omitempty"`
+	Room        *RoomFilter  `json:"room,omitempty"`
+	Presence    *EventFilter `json:"presence,omitempty"`
+	AccountData *EventFilter `json:"account_data,omitempty"`
+	EventFormat string       `json:"event_format,omitempty"`
+	EventFields []string     `json:"event_fields,omitempty"`
 }
 
 type RoomFilter struct {
-	NotRooms       []string            `json:"not_rooms,omitempty"`
-	Rooms          []string            `json:"rooms,omitempty"`
-	Ephemeral      *RoomEventFilter    `json:"ephemeral,omitempty"`
-	IncludeLeave   bool                `json:"include_leave"`
-	State          *StateFilter        `json:"state,omitempty"`
-	Timeline       *RoomEventFilter    `json:"timeline,omitempty"`
-	AccountData    *RoomEventFilter    `json:"account_data,omitempty"`
+	NotRooms     []string         `json:"not_rooms,omitempty"`
+	Rooms        []string         `json:"rooms,omitempty"`
+	Ephemeral    *RoomEventFilter `json:"ephemeral,omitempty"`
+	IncludeLeave bool             `json:"include_leave"`
+	State        *StateFilter     `json:"state,omitempty"`
+	Timeline     *RoomEventFilter `json:"timeline,omitempty"`
+	AccountData  *RoomEventFilter `json:"account_data,omitempty"`
 }
 
 type EventFilter struct {
@@ -326,29 +326,29 @@ type EventFilter struct {
 }
 
 type RoomEventFilter struct {
-	Limit                int      `json:"limit,omitempty"`
-	NotSenders           []string `json:"not_senders,omitempty"`
-	NotTypes             []string `json:"not_types,omitempty"`
-	Senders              []string `json:"senders,omitempty"`
-	Types                []string `json:"types,omitempty"`
-	LazyLoadMembers      bool     `json:"lazy_load_members,omitempty"`
-	IncludeRedundantMembers bool  `json:"include_redundant_members,omitempty"`
-	NotRooms             []string `json:"not_rooms,omitempty"`
-	Rooms                []string `json:"rooms,omitempty"`
-	ContainsURL          *bool    `json:"contains_url,omitempty"`
+	Limit                   int      `json:"limit,omitempty"`
+	NotSenders              []string `json:"not_senders,omitempty"`
+	NotTypes                []string `json:"not_types,omitempty"`
+	Senders                 []string `json:"senders,omitempty"`
+	Types                   []string `json:"types,omitempty"`
+	LazyLoadMembers         bool     `json:"lazy_load_members,omitempty"`
+	IncludeRedundantMembers bool     `json:"include_redundant_members,omitempty"`
+	NotRooms                []string `json:"not_rooms,omitempty"`
+	Rooms                   []string `json:"rooms,omitempty"`
+	ContainsURL             *bool    `json:"contains_url,omitempty"`
 }
 
 type StateFilter struct {
-	Limit                int      `json:"limit,omitempty"`
-	NotSenders           []string `json:"not_senders,omitempty"`
-	NotTypes             []string `json:"not_types,omitempty"`
-	Senders              []string `json:"senders,omitempty"`
-	Types                []string `json:"types,omitempty"`
-	LazyLoadMembers      bool     `json:"lazy_load_members,omitempty"`
-	IncludeRedundantMembers bool  `json:"include_redundant_members,omitempty"`
-	NotRooms             []string `json:"not_rooms,omitempty"`
-	Rooms                []string `json:"rooms,omitempty"`
-	ContainsURL          *bool    `json:"contains_url,omitempty"`
+	Limit                   int      `json:"limit,omitempty"`
+	NotSenders              []string `json:"not_senders,omitempty"`
+	NotTypes                []string `json:"not_types,omitempty"`
+	Senders                 []string `json:"senders,omitempty"`
+	Types                   []string `json:"types,omitempty"`
+	LazyLoadMembers         bool     `json:"lazy_load_members,omitempty"`
+	IncludeRedundantMembers bool     `json:"include_redundant_members,omitempty"`
+	NotRooms                []string `json:"not_rooms,omitempty"`
+	Rooms                   []string `json:"rooms,omitempty"`
+	ContainsURL             *bool    `json:"contains_url,omitempty"`
 }
 
 // ============================================================
@@ -356,15 +356,15 @@ type StateFilter struct {
 // ============================================================
 
 type PowerLevelContent struct {
-	Ban           int                    `json:"ban,omitempty"`
-	Events        map[string]int         `json:"events,omitempty"`
-	EventsDefault int                    `json:"events_default,omitempty"`
-	Invite        int                    `json:"invite,omitempty"`
-	Kick          int                    `json:"kick,omitempty"`
-	Redact        int                    `json:"redact,omitempty"`
-	StateDefault  int                    `json:"state_default,omitempty"`
-	Users         map[string]int         `json:"users,omitempty"`
-	UsersDefault  int                    `json:"users_default,omitempty"`
+	Ban           int            `json:"ban,omitempty"`
+	Events        map[string]int `json:"events,omitempty"`
+	EventsDefault int            `json:"events_default,omitempty"`
+	Invite        int            `json:"invite,omitempty"`
+	Kick          int            `json:"kick,omitempty"`
+	Redact        int            `json:"redact,omitempty"`
+	StateDefault  int            `json:"state_default,omitempty"`
+	Users         map[string]int `json:"users,omitempty"`
+	UsersDefault  int            `json:"users_default,omitempty"`
 }
 
 // ============================================================
@@ -384,19 +384,19 @@ type MemberContent struct {
 
 const (
 	// Event Types
-	EventTypeRoomMessage       = "m.room.message"
-	EventTypeRoomMember        = "m.room.member"
-	EventTypeRoomCreate        = "m.room.create"
-	EventTypeRoomName          = "m.room.name"
-	EventTypeRoomTopic         = "m.room.topic"
-	EventTypeRoomAvatar        = "m.room.avatar"
-	EventTypeRoomPowerLevels   = "m.room.power_levels"
-	EventTypeRoomEncryption    = "m.room.encryption"
-	EventTypeRoomEncrypted     = "m.room.encrypted"
-	EventTypeRoomKey           = "m.room_key"
-	EventTypeTyping            = "m.typing"
-	EventTypeReceipt           = "m.receipt"
-	EventTypePresence          = "m.presence"
+	EventTypeRoomMessage     = "m.room.message"
+	EventTypeRoomMember      = "m.room.member"
+	EventTypeRoomCreate      = "m.room.create"
+	EventTypeRoomName        = "m.room.name"
+	EventTypeRoomTopic       = "m.room.topic"
+	EventTypeRoomAvatar      = "m.room.avatar"
+	EventTypeRoomPowerLevels = "m.room.power_levels"
+	EventTypeRoomEncryption  = "m.room.encryption"
+	EventTypeRoomEncrypted   = "m.room.encrypted"
+	EventTypeRoomKey         = "m.room_key"
+	EventTypeTyping          = "m.typing"
+	EventTypeReceipt         = "m.receipt"
+	EventTypePresence        = "m.presence"
 
 	// Message Types
 	MsgTypeText     = "m.text"

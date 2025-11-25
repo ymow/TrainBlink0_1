@@ -12,11 +12,11 @@ import (
 
 // MLSGroup represents an MLS group
 type MLSGroup struct {
-	ID              uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	GroupID         string     `gorm:"uniqueIndex;not null" json:"group_id"`
-	RoomID          *string    `gorm:"index" json:"room_id,omitempty"`
-	StationID       *string    `gorm:"index" json:"station_id,omitempty"`
-	CreatorUserID   string     `gorm:"not null" json:"creator_user_id"`
+	ID            uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	GroupID       string    `gorm:"uniqueIndex;not null" json:"group_id"`
+	RoomID        *string   `gorm:"index" json:"room_id,omitempty"`
+	StationID     *string   `gorm:"index" json:"station_id,omitempty"`
+	CreatorUserID string    `gorm:"not null" json:"creator_user_id"`
 
 	// MLS State
 	Epoch           int64  `gorm:"not null;default:0" json:"epoch"`
@@ -28,11 +28,11 @@ type MLSGroup struct {
 	ProtocolVersion string `gorm:"not null" json:"protocol_version"`
 
 	// Metadata
-	MemberCount  int  `gorm:"default:0" json:"member_count"`
-	IsActive     bool `gorm:"default:true" json:"is_active"`
-	CreatedAt    time.Time `gorm:"default:now()" json:"created_at"`
-	UpdatedAt    time.Time `gorm:"default:now()" json:"updated_at"`
-	LastEpochAt  time.Time `gorm:"default:now()" json:"last_epoch_at"`
+	MemberCount int       `gorm:"default:0" json:"member_count"`
+	IsActive    bool      `gorm:"default:true" json:"is_active"`
+	CreatedAt   time.Time `gorm:"default:now()" json:"created_at"`
+	UpdatedAt   time.Time `gorm:"default:now()" json:"updated_at"`
+	LastEpochAt time.Time `gorm:"default:now()" json:"last_epoch_at"`
 }
 
 // TableName specifies the table name for MLSGroup
@@ -50,9 +50,9 @@ type MLSGroupMember struct {
 	SignaturePublicKey []byte    `gorm:"not null" json:"signature_public_key"`
 
 	// Membership State
-	JoinedAtEpoch  int64      `gorm:"not null" json:"joined_at_epoch"`
-	RemovedAtEpoch *int64     `json:"removed_at_epoch,omitempty"`
-	IsActive       bool       `gorm:"default:true;index" json:"is_active"`
+	JoinedAtEpoch  int64  `gorm:"not null" json:"joined_at_epoch"`
+	RemovedAtEpoch *int64 `json:"removed_at_epoch,omitempty"`
+	IsActive       bool   `gorm:"default:true;index" json:"is_active"`
 
 	// Timestamps
 	JoinedAt   time.Time  `gorm:"default:now()" json:"joined_at"`
@@ -66,10 +66,10 @@ func (MLSGroupMember) TableName() string {
 
 // MLSCredential represents a client credential
 type MLSCredential struct {
-	ID                 uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	CredentialID       string    `gorm:"uniqueIndex;not null" json:"credential_id"`
-	UserID             string    `gorm:"index;not null" json:"user_id"`
-	ClientID           string    `gorm:"index;not null" json:"client_id"`
+	ID           uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	CredentialID string    `gorm:"uniqueIndex;not null" json:"credential_id"`
+	UserID       string    `gorm:"index;not null" json:"user_id"`
+	ClientID     string    `gorm:"index;not null" json:"client_id"`
 
 	// Credential Data
 	CredentialType     string `gorm:"not null" json:"credential_type"` // "basic" or "x509"
@@ -91,11 +91,11 @@ func (MLSCredential) TableName() string {
 
 // MLSKeyPackage represents a KeyPackage
 type MLSKeyPackage struct {
-	ID             uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	KeyPackageID   string    `gorm:"uniqueIndex;not null" json:"key_package_id"`
-	UserID         string    `gorm:"index;not null" json:"user_id"`
-	ClientID       string    `gorm:"not null" json:"client_id"`
-	CredentialID   string    `gorm:"not null" json:"credential_id"`
+	ID           uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	KeyPackageID string    `gorm:"uniqueIndex;not null" json:"key_package_id"`
+	UserID       string    `gorm:"index;not null" json:"user_id"`
+	ClientID     string    `gorm:"not null" json:"client_id"`
+	CredentialID string    `gorm:"not null" json:"credential_id"`
 
 	// KeyPackage Data
 	KeyPackageData []byte `gorm:"not null" json:"key_package_data"`
@@ -118,10 +118,10 @@ func (MLSKeyPackage) TableName() string {
 
 // MLSMessage represents an MLS protocol message
 type MLSMessage struct {
-	ID                uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	MessageID         string    `gorm:"uniqueIndex;not null" json:"message_id"`
-	GroupID           string    `gorm:"index;not null" json:"group_id"`
-	SenderClientID    string    `gorm:"not null" json:"sender_client_id"`
+	ID             uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	MessageID      string    `gorm:"uniqueIndex;not null" json:"message_id"`
+	GroupID        string    `gorm:"index;not null" json:"group_id"`
+	SenderClientID string    `gorm:"not null" json:"sender_client_id"`
 
 	// Message Type
 	MessageType string `gorm:"not null" json:"message_type"` // "application" | "proposal" | "commit"
@@ -150,9 +150,9 @@ func (MLSMessage) TableName() string {
 
 // MLSEpochHistory represents epoch change history
 type MLSEpochHistory struct {
-	ID          uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	GroupID     string    `gorm:"index;not null" json:"group_id"`
-	Epoch       int64     `gorm:"not null" json:"epoch"`
+	ID      uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	GroupID string    `gorm:"index;not null" json:"group_id"`
+	Epoch   int64     `gorm:"not null" json:"epoch"`
 
 	// State Snapshot
 	TreeHash        []byte `gorm:"not null" json:"tree_hash"`
@@ -248,12 +248,12 @@ const (
 
 // MLSConfig holds MLS system configuration
 type MLSConfig struct {
-	Enabled          bool     `json:"enabled"`
-	CipherSuites     []uint16 `json:"cipher_suites"`
-	ProtocolVersion  string   `json:"protocol_version"`
-	MaxMembersPerGroup int    `json:"max_members_per_group"`
-	MaxMessageSize   int      `json:"max_message_size"`
-	KeyPackageConfig KeyPackageConfig `json:"keypackage_config"`
+	Enabled            bool             `json:"enabled"`
+	CipherSuites       []uint16         `json:"cipher_suites"`
+	ProtocolVersion    string           `json:"protocol_version"`
+	MaxMembersPerGroup int              `json:"max_members_per_group"`
+	MaxMessageSize     int              `json:"max_message_size"`
+	KeyPackageConfig   KeyPackageConfig `json:"keypackage_config"`
 }
 
 // KeyPackageConfig holds KeyPackage configuration
@@ -322,7 +322,7 @@ type UploadKeyPackageResponse struct {
 type SendMessageRequest struct {
 	MessageType       string `json:"message_type"`
 	SenderClientID    string `json:"sender_client_id"`
-	Ciphertext        string `json:"ciphertext"` // Base64 encoded
+	Ciphertext        string `json:"ciphertext"`                   // Base64 encoded
 	AuthenticatedData string `json:"authenticated_data,omitempty"` // Base64 encoded
 }
 
@@ -347,17 +347,17 @@ type MessageData struct {
 	MessageType       string    `json:"message_type"`
 	Epoch             int64     `json:"epoch"`
 	SequenceNumber    int64     `json:"sequence_number"`
-	Ciphertext        string    `json:"ciphertext"` // Base64 encoded
+	Ciphertext        string    `json:"ciphertext"`                   // Base64 encoded
 	AuthenticatedData string    `json:"authenticated_data,omitempty"` // Base64 encoded
 	SentAt            time.Time `json:"sent_at"`
 }
 
 // GroupStatsResponse is the response for group statistics
 type GroupStatsResponse struct {
-	GroupID      string `json:"group_id"`
-	MemberCount  int    `json:"member_count"`
-	MessageCount int64  `json:"message_count"`
-	Epoch        int64  `json:"epoch"`
+	GroupID      string    `json:"group_id"`
+	MemberCount  int       `json:"member_count"`
+	MessageCount int64     `json:"message_count"`
+	Epoch        int64     `json:"epoch"`
 	LastActive   time.Time `json:"last_active"`
 }
 

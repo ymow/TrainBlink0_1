@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ErrAdminNotFound     = errors.New("admin not found")
+	ErrAdminNotFound      = errors.New("admin not found")
 	ErrEmailAlreadyExists = errors.New("email already exists")
 )
 
@@ -75,10 +75,10 @@ func (r *Repository) UpdateLastLogin(ctx context.Context, id uuid.UUID, ip strin
 	return r.db.WithContext(ctx).Model(&Admin{}).
 		Where("id = ?", id).
 		Updates(map[string]interface{}{
-			"last_login_at": now,
-			"last_login_ip": ip,
+			"last_login_at":         now,
+			"last_login_ip":         ip,
 			"failed_login_attempts": 0, // Reset failed attempts on successful login
-			"locked_until": nil,
+			"locked_until":          nil,
 		}).Error
 }
 

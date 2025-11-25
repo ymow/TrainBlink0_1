@@ -18,9 +18,9 @@ var (
 
 // JWTService handles JWT token generation and verification
 type JWTService struct {
-	secretKey        []byte
-	accessTokenTTL   time.Duration
-	refreshTokenTTL  time.Duration
+	secretKey       []byte
+	accessTokenTTL  time.Duration
+	refreshTokenTTL time.Duration
 }
 
 // TokenPair contains access and refresh tokens

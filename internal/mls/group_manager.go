@@ -79,13 +79,13 @@ func (gm *GroupManager) CreateGroup(
 
 	// Initialize epoch history
 	history := &MLSEpochHistory{
-		GroupID:        groupID,
-		Epoch:          0,
-		TreeHash:       group.TreeHash,
+		GroupID:         groupID,
+		Epoch:           0,
+		TreeHash:        group.TreeHash,
 		ConfirmationTag: group.ConfirmationTag,
-		MemberCount:    0,
-		ChangeType:     "create",
-		StartedAt:      time.Now(),
+		MemberCount:     0,
+		ChangeType:      "create",
+		StartedAt:       time.Now(),
 	}
 	gm.db.WithContext(ctx).Create(history)
 

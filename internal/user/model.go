@@ -11,8 +11,8 @@ type User struct {
 	ID uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
 
 	// Authentication
-	FirebaseUID   string  `json:"firebase_uid" gorm:"uniqueIndex;not null"`
-	MatrixUserID  *string `json:"matrix_user_id,omitempty" gorm:"index"`
+	FirebaseUID  string  `json:"firebase_uid" gorm:"uniqueIndex;not null"`
+	MatrixUserID *string `json:"matrix_user_id,omitempty" gorm:"index"`
 
 	// Profile
 	DisplayName *string `json:"display_name,omitempty"`

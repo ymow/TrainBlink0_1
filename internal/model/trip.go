@@ -13,13 +13,13 @@ type Trip struct {
 	UserID uuid.UUID `gorm:"type:uuid;not null;index" json:"user_id"`
 
 	// Trip details
-	Route       string  `gorm:"type:varchar(200);not null;index" json:"route"`        // "Tokyo → Osaka"
-	TrainNumber *string `gorm:"type:varchar(50)" json:"train_number,omitempty"`       // "Nozomi 123"
+	Route       string  `gorm:"type:varchar(200);not null;index" json:"route"`  // "Tokyo → Osaka"
+	TrainNumber *string `gorm:"type:varchar(50)" json:"train_number,omitempty"` // "Nozomi 123"
 
 	// Timing
-	DepartureTime     time.Time  `gorm:"type:timestamp with time zone;not null;index" json:"departure_time"`
-	EstimatedArrival  time.Time  `gorm:"type:timestamp with time zone;not null" json:"estimated_arrival"`
-	ActualEndTime     *time.Time `gorm:"type:timestamp with time zone" json:"actual_end_time,omitempty"`
+	DepartureTime    time.Time  `gorm:"type:timestamp with time zone;not null;index" json:"departure_time"`
+	EstimatedArrival time.Time  `gorm:"type:timestamp with time zone;not null" json:"estimated_arrival"`
+	ActualEndTime    *time.Time `gorm:"type:timestamp with time zone" json:"actual_end_time,omitempty"`
 
 	// BLE Discovery
 	DiscoveryEnabled bool   `gorm:"default:true" json:"discovery_enabled"`
@@ -79,13 +79,13 @@ type Discovery struct {
 	// Discovery metadata
 	DiscoveredUserAnonymousID string  `gorm:"type:varchar(50);not null" json:"discovered_user_anonymous_id"`
 	DistanceEstimate          *string `gorm:"type:varchar(20)" json:"distance_estimate,omitempty"` // "Close (2-10m)"
-	RSSI                      *int    `json:"rssi,omitempty"`                                       // BLE signal strength
+	RSSI                      *int    `json:"rssi,omitempty"`                                      // BLE signal strength
 
 	// Optional demographics (anonymized, opt-in)
-	DiscovererAgeRange   *string `gorm:"type:varchar(20)" json:"discoverer_age_range,omitempty"`   // "25-30"
-	DiscoveredAgeRange   *string `gorm:"type:varchar(20)" json:"discovered_age_range,omitempty"`   // "25-30"
-	DiscovererGender     *string `gorm:"type:char(1)" json:"discoverer_gender,omitempty"`          // M/F/O
-	DiscoveredGender     *string `gorm:"type:char(1)" json:"discovered_gender,omitempty"`          // M/F/O
+	DiscovererAgeRange *string `gorm:"type:varchar(20)" json:"discoverer_age_range,omitempty"` // "25-30"
+	DiscoveredAgeRange *string `gorm:"type:varchar(20)" json:"discovered_age_range,omitempty"` // "25-30"
+	DiscovererGender   *string `gorm:"type:char(1)" json:"discoverer_gender,omitempty"`        // M/F/O
+	DiscoveredGender   *string `gorm:"type:char(1)" json:"discovered_gender,omitempty"`        // M/F/O
 
 	// Timestamp
 	DiscoveredAt time.Time `gorm:"default:now();index" json:"discovered_at"`
@@ -119,8 +119,8 @@ type MatrixEphemeralRoom struct {
 	DeletedAt        *time.Time `gorm:"type:timestamp with time zone" json:"deleted_at,omitempty"`
 
 	// Metadata
-	MessageCount   int        `gorm:"default:0" json:"message_count"`
-	LastMessageAt  *time.Time `gorm:"type:timestamp with time zone" json:"last_message_at,omitempty"`
+	MessageCount  int        `gorm:"default:0" json:"message_count"`
+	LastMessageAt *time.Time `gorm:"type:timestamp with time zone" json:"last_message_at,omitempty"`
 
 	// Timestamps
 	CreatedAt time.Time `gorm:"default:now()" json:"created_at"`

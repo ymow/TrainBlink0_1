@@ -23,8 +23,8 @@ const (
 	maxMessageSize = 8192 // 8KB
 
 	// Rate limiting
-	maxMessagesPerMinute   = 60  // Regular messages
-	maxBroadcastsPerMinute = 10  // Broadcast messages
+	maxMessagesPerMinute   = 60 // Regular messages
+	maxBroadcastsPerMinute = 10 // Broadcast messages
 	rateLimitWindow        = time.Minute
 )
 
@@ -50,11 +50,11 @@ type Client struct {
 	LastPingAt  time.Time
 
 	// Rate limiting
-	messageCount     int       // Messages sent in current window
-	broadcastCount   int       // Broadcasts sent in current window
-	rateLimitReset   time.Time // When to reset counters
-	totalMessages    int64     // Total messages sent (lifetime)
-	totalBroadcasts  int64     // Total broadcasts sent (lifetime)
+	messageCount    int       // Messages sent in current window
+	broadcastCount  int       // Broadcasts sent in current window
+	rateLimitReset  time.Time // When to reset counters
+	totalMessages   int64     // Total messages sent (lifetime)
+	totalBroadcasts int64     // Total broadcasts sent (lifetime)
 
 	// Message handler
 	messageHandler *MessageHandler

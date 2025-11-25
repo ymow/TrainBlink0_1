@@ -82,8 +82,8 @@ func (h *CleanupHandler) GetExpiringRoomWarnings(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
 		"data": gin.H{
-			"warnings": warnings,
-			"total":    len(warnings),
+			"warnings":     warnings,
+			"total":        len(warnings),
 			"within_hours": hours,
 		},
 	})

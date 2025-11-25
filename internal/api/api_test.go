@@ -206,10 +206,10 @@ func TestDiscoveryEndpoints(t *testing.T) {
 
 	t.Run("Log Discovery", func(t *testing.T) {
 		discoveryReq := map[string]interface{}{
-			"trip_route":                  "Tokyo → Osaka",
+			"trip_route":                   "Tokyo → Osaka",
 			"discovered_user_anonymous_id": "TB_test123",
-			"distance_estimate":           "Close (2-10m)",
-			"rssi":                        -65,
+			"distance_estimate":            "Close (2-10m)",
+			"rssi":                         -65,
 		}
 
 		body, _ := json.Marshal(discoveryReq)

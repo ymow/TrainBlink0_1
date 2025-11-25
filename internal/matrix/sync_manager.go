@@ -10,12 +10,12 @@ import (
 
 // SyncManager manages the Matrix /sync loop
 type SyncManager struct {
-	client      *Client
-	since       string
-	handlers    []EventHandler
-	stopChan    chan struct{}
-	isRunning   bool
-	mu          sync.RWMutex
+	client    *Client
+	since     string
+	handlers  []EventHandler
+	stopChan  chan struct{}
+	isRunning bool
+	mu        sync.RWMutex
 
 	// Sync statistics
 	syncCount   int64
@@ -94,13 +94,13 @@ func (sm *SyncManager) GetStats() map[string]interface{} {
 	defer sm.mu.RUnlock()
 
 	return map[string]interface{}{
-		"is_running":       sm.isRunning,
-		"sync_count":       sm.syncCount,
-		"error_count":      sm.errorCount,
-		"last_sync_at":     sm.lastSyncAt,
-		"avg_duration_ms":  sm.avgDuration.Milliseconds(),
-		"handler_count":    len(sm.handlers),
-		"since_token":      sm.since,
+		"is_running":      sm.isRunning,
+		"sync_count":      sm.syncCount,
+		"error_count":     sm.errorCount,
+		"last_sync_at":    sm.lastSyncAt,
+		"avg_duration_ms": sm.avgDuration.Milliseconds(),
+		"handler_count":   len(sm.handlers),
+		"since_token":     sm.since,
 	}
 }
 

@@ -45,9 +45,9 @@ func NewPostgresDB(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	}
 
 	// Connection pool settings
-	sqlDB.SetMaxOpenConns(25)                 // Maximum number of open connections
-	sqlDB.SetMaxIdleConns(5)                  // Maximum number of idle connections
-	sqlDB.SetConnMaxLifetime(5 * time.Minute) // Maximum connection lifetime
+	sqlDB.SetMaxOpenConns(25)                  // Maximum number of open connections
+	sqlDB.SetMaxIdleConns(5)                   // Maximum number of idle connections
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)  // Maximum connection lifetime
 	sqlDB.SetConnMaxIdleTime(10 * time.Minute) // Maximum idle time
 
 	// Test connection

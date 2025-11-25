@@ -22,58 +22,58 @@ type Capabilities struct {
 
 // UserSession represents a geofence session
 type UserSession struct {
-	ID                 uuid.UUID   `json:"id" db:"id"`
-	UserID             string      `json:"user_id" db:"user_id"`
-	DeviceID           string      `json:"device_id" db:"device_id"`
-	StationID          string      `json:"station_id" db:"station_id"`
+	ID        uuid.UUID `json:"id" db:"id"`
+	UserID    string    `json:"user_id" db:"user_id"`
+	DeviceID  string    `json:"device_id" db:"device_id"`
+	StationID string    `json:"station_id" db:"station_id"`
 
 	// Timeline
-	EnteredAt          time.Time   `json:"entered_at" db:"entered_at"`
-	ExitedAt           *time.Time  `json:"exited_at,omitempty" db:"exited_at"`
-	DurationSeconds    *int        `json:"duration_seconds,omitempty" db:"duration_seconds"`
+	EnteredAt       time.Time  `json:"entered_at" db:"entered_at"`
+	ExitedAt        *time.Time `json:"exited_at,omitempty" db:"exited_at"`
+	DurationSeconds *int       `json:"duration_seconds,omitempty" db:"duration_seconds"`
 
 	// Entry/Exit Coordinates
-	EntryLatitude      float64     `json:"entry_latitude" db:"entry_latitude"`
-	EntryLongitude     float64     `json:"entry_longitude" db:"entry_longitude"`
-	ExitLatitude       *float64    `json:"exit_latitude,omitempty" db:"exit_latitude"`
-	ExitLongitude      *float64    `json:"exit_longitude,omitempty" db:"exit_longitude"`
+	EntryLatitude  float64  `json:"entry_latitude" db:"entry_latitude"`
+	EntryLongitude float64  `json:"entry_longitude" db:"entry_longitude"`
+	ExitLatitude   *float64 `json:"exit_latitude,omitempty" db:"exit_latitude"`
+	ExitLongitude  *float64 `json:"exit_longitude,omitempty" db:"exit_longitude"`
 
 	// P2P Activity Stats
-	P2PChatsCreated    int         `json:"p2p_chats_created" db:"p2p_chats_created"`
-	P2PMessagesSent    int         `json:"p2p_messages_sent" db:"p2p_messages_sent"`
-	P2PContentShared   int         `json:"p2p_content_shared" db:"p2p_content_shared"`
-	Encounters         int         `json:"encounters" db:"encounters"`
+	P2PChatsCreated  int `json:"p2p_chats_created" db:"p2p_chats_created"`
+	P2PMessagesSent  int `json:"p2p_messages_sent" db:"p2p_messages_sent"`
+	P2PContentShared int `json:"p2p_content_shared" db:"p2p_content_shared"`
+	Encounters       int `json:"encounters" db:"encounters"`
 
 	// Matrix Activity Stats
-	MatrixUserID       string      `json:"matrix_user_id" db:"matrix_user_id"`
-	MatrixRoomID       string      `json:"matrix_room_id" db:"matrix_room_id"`
-	MatrixMessagesSent int         `json:"matrix_messages_sent" db:"matrix_messages_sent"`
-	MatrixJoinedAt     *time.Time  `json:"matrix_joined_at,omitempty" db:"matrix_joined_at"`
-	MatrixLeftAt       *time.Time  `json:"matrix_left_at,omitempty" db:"matrix_left_at"`
+	MatrixUserID       string     `json:"matrix_user_id" db:"matrix_user_id"`
+	MatrixRoomID       string     `json:"matrix_room_id" db:"matrix_room_id"`
+	MatrixMessagesSent int        `json:"matrix_messages_sent" db:"matrix_messages_sent"`
+	MatrixJoinedAt     *time.Time `json:"matrix_joined_at,omitempty" db:"matrix_joined_at"`
+	MatrixLeftAt       *time.Time `json:"matrix_left_at,omitempty" db:"matrix_left_at"`
 
 	// Metadata
-	ClientVersion      string      `json:"client_version" db:"client_version"`
-	CapabilitiesJSON   string      `json:"capabilities" db:"capabilities"` // JSON stored
+	ClientVersion    string `json:"client_version" db:"client_version"`
+	CapabilitiesJSON string `json:"capabilities" db:"capabilities"` // JSON stored
 
-	CreatedAt          time.Time   `json:"created_at" db:"created_at"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
 
 // EnterStationRequest - Request to enter a station
 type EnterStationRequest struct {
-	StationID    string       `json:"station_id" binding:"required"`
-	Coordinates  Coordinates  `json:"coordinates" binding:"required"`
-	Timestamp    time.Time    `json:"timestamp"`
-	ClientVersion string      `json:"client_version"`
-	Capabilities Capabilities `json:"capabilities"`
+	StationID     string       `json:"station_id" binding:"required"`
+	Coordinates   Coordinates  `json:"coordinates" binding:"required"`
+	Timestamp     time.Time    `json:"timestamp"`
+	ClientVersion string       `json:"client_version"`
+	Capabilities  Capabilities `json:"capabilities"`
 }
 
 // ExitStationRequest - Request to exit a station
 type ExitStationRequest struct {
-	SessionID        string          `json:"session_id" binding:"required"`
-	StationID        string          `json:"station_id" binding:"required"`
-	Timestamp        time.Time       `json:"timestamp"`
-	DurationSeconds  int             `json:"duration_seconds"`
-	Activity         ActivitySummary `json:"activity"`
+	SessionID       string          `json:"session_id" binding:"required"`
+	StationID       string          `json:"station_id" binding:"required"`
+	Timestamp       time.Time       `json:"timestamp"`
+	DurationSeconds int             `json:"duration_seconds"`
+	Activity        ActivitySummary `json:"activity"`
 }
 
 // ActivitySummary - Summary of user activity during session
@@ -122,7 +122,7 @@ type ExitStationResponse struct {
 
 // CleanupStatus - Status of cleanup operations
 type CleanupStatus struct {
-	P2PClosed         bool `json:"p2p_closed"`
-	MatrixLeft        bool `json:"matrix_left"`
-	LocalDataCleared  bool `json:"local_data_cleared"`
+	P2PClosed        bool `json:"p2p_closed"`
+	MatrixLeft       bool `json:"matrix_left"`
+	LocalDataCleared bool `json:"local_data_cleared"`
 }

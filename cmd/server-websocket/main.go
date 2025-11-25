@@ -45,9 +45,9 @@ var (
 
 // Client represents a WebSocket client
 type Client struct {
-	ID         string
-	Conn       *websocket.Conn
-	Send       chan []byte
+	ID          string
+	Conn        *websocket.Conn
+	Send        chan []byte
 	ConnectedAt time.Time
 }
 
@@ -131,17 +131,17 @@ type HelloResponse struct {
 }
 
 type HealthResponse struct {
-	Status         string    `json:"status"`
-	Timestamp      time.Time `json:"timestamp"`
-	Uptime         float64   `json:"uptime"`
-	Connections    int       `json:"connections"`
-	TotalRequests  int       `json:"total_requests"`
+	Status        string    `json:"status"`
+	Timestamp     time.Time `json:"timestamp"`
+	Uptime        float64   `json:"uptime"`
+	Connections   int       `json:"connections"`
+	TotalRequests int       `json:"total_requests"`
 }
 
 type ConnectionsResponse struct {
-	Count       int      `json:"count"`
-	ClientIDs   []string `json:"client_ids"`
-	Timestamp   time.Time `json:"timestamp"`
+	Count     int       `json:"count"`
+	ClientIDs []string  `json:"client_ids"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 var requestCount = 0
@@ -179,13 +179,13 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		"message": "TrainBlink Server API",
 		"version": version,
 		"endpoints": map[string]string{
-			"GET /ping":              "Health check",
-			"GET /health":            "Detailed health status",
-			"GET /api/v1/hello":      "Hello World",
-			"GET /api/v1/welcome":    "Welcome message",
-			"POST /api/v1/message":   "Send message to client",
+			"GET /ping":               "Health check",
+			"GET /health":             "Detailed health status",
+			"GET /api/v1/hello":       "Hello World",
+			"GET /api/v1/welcome":     "Welcome message",
+			"POST /api/v1/message":    "Send message to client",
 			"GET /api/v1/connections": "Get active connections",
-			"WS /ws":                 "WebSocket connection",
+			"WS /ws":                  "WebSocket connection",
 		},
 	})
 }
@@ -370,7 +370,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		Message:   fmt.Sprintf("Welcome! Your ID is: %s", clientID),
 		Timestamp: time.Now(),
 		Data: map[string]interface{}{
-			"client_id": clientID,
+			"client_id":      clientID,
 			"server_version": version,
 		},
 	}

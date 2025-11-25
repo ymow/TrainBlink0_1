@@ -16,11 +16,11 @@ import (
 
 // Service handles automatic cleanup of expired data
 type Service struct {
-	db                *gorm.DB
-	redis             *redis.Client
-	tripService       *trip.Service
-	discoveryService  *discovery.Service
-	ephemeralRoomMgr  *matrix.EphemeralRoomManager
+	db               *gorm.DB
+	redis            *redis.Client
+	tripService      *trip.Service
+	discoveryService *discovery.Service
+	ephemeralRoomMgr *matrix.EphemeralRoomManager
 
 	// Cleanup intervals
 	tripCleanupInterval      time.Duration
@@ -45,7 +45,7 @@ func NewService(
 		tripService:              tripService,
 		discoveryService:         discoveryService,
 		ephemeralRoomMgr:         ephemeralRoomMgr,
-		tripCleanupInterval:      1 * time.Hour,  // Run hourly
+		tripCleanupInterval:      1 * time.Hour,    // Run hourly
 		roomCleanupInterval:      30 * time.Minute, // Run every 30 minutes
 		discoveryCleanupInterval: 24 * time.Hour,   // Run daily
 		discoveryRetentionDays:   90,               // Keep 90 days of discovery data
@@ -262,12 +262,12 @@ func (s *Service) WarnExpiringRooms(ctx context.Context, within time.Duration) (
 	for i, room := range rooms {
 		timeUntilExpiry := time.Until(room.ExpiresAt)
 		warnings[i] = ExpiringRoomWarning{
-			RoomID:         room.RoomID,
-			Trip1ID:        room.Trip1ID,
-			Trip2ID:        room.Trip2ID,
-			ExpiresAt:      room.ExpiresAt,
-			TimeRemaining:  timeUntilExpiry,
-			MessageCount:   room.MessageCount,
+			RoomID:        room.RoomID,
+			Trip1ID:       room.Trip1ID,
+			Trip2ID:       room.Trip2ID,
+			ExpiresAt:     room.ExpiresAt,
+			TimeRemaining: timeUntilExpiry,
+			MessageCount:  room.MessageCount,
 		}
 	}
 
@@ -280,12 +280,12 @@ func (s *Service) WarnExpiringRooms(ctx context.Context, within time.Duration) (
 
 // CleanupStats contains cleanup statistics
 type CleanupStats struct {
-	TripsDeleted         int `json:"trips_deleted"`
-	RoomsDeleted         int `json:"rooms_deleted"`
-	DiscoveriesDeleted   int `json:"discoveries_deleted"`
-	ExpiredTripsCount    int `json:"expired_trips_count"`
-	ExpiredRoomsCount    int `json:"expired_rooms_count"`
-	OldDiscoveriesCount  int `json:"old_discoveries_count"`
+	TripsDeleted        int `json:"trips_deleted"`
+	RoomsDeleted        int `json:"rooms_deleted"`
+	DiscoveriesDeleted  int `json:"discoveries_deleted"`
+	ExpiredTripsCount   int `json:"expired_trips_count"`
+	ExpiredRoomsCount   int `json:"expired_rooms_count"`
+	OldDiscoveriesCount int `json:"old_discoveries_count"`
 }
 
 // ExpiringRoomWarning contains information about an expiring room

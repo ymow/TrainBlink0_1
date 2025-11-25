@@ -50,9 +50,9 @@ type FirebaseConfig struct {
 
 // JWTConfig contains JWT configuration
 type JWTConfig struct {
-	SecretKey        string
-	AccessTokenTTL   time.Duration
-	RefreshTokenTTL  time.Duration
+	SecretKey       string
+	AccessTokenTTL  time.Duration
+	RefreshTokenTTL time.Duration
 }
 
 // CORSConfig contains CORS configuration
@@ -90,9 +90,9 @@ func Load() (*Config, error) {
 			ProjectID:       getEnv("FIREBASE_PROJECT_ID", ""),
 		},
 		JWT: JWTConfig{
-			SecretKey:        getEnv("JWT_SECRET_KEY", ""),
-			AccessTokenTTL:   time.Duration(getEnvInt("JWT_ACCESS_TOKEN_TTL", 3600)) * time.Second,
-			RefreshTokenTTL:  time.Duration(getEnvInt("JWT_REFRESH_TOKEN_TTL", 604800)) * time.Second,
+			SecretKey:       getEnv("JWT_SECRET_KEY", ""),
+			AccessTokenTTL:  time.Duration(getEnvInt("JWT_ACCESS_TOKEN_TTL", 3600)) * time.Second,
+			RefreshTokenTTL: time.Duration(getEnvInt("JWT_REFRESH_TOKEN_TTL", 604800)) * time.Second,
 		},
 		CORS: CORSConfig{
 			AllowedOrigins: getEnvSlice("CORS_ALLOWED_ORIGINS", []string{"*"}),

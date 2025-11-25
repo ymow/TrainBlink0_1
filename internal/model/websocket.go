@@ -32,10 +32,10 @@ type WebSocketMessage struct {
 
 // ClientMessage represents a message sent from client to server
 type ClientMessage struct {
-	Type      MessageType            `json:"type"`                 // Message type
-	To        string                 `json:"to,omitempty"`         // Recipient (optional)
-	Content   string                 `json:"content,omitempty"`    // Message content
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`   // Additional metadata
+	Type     MessageType            `json:"type"`               // Message type
+	To       string                 `json:"to,omitempty"`       // Recipient (optional)
+	Content  string                 `json:"content,omitempty"`  // Message content
+	Metadata map[string]interface{} `json:"metadata,omitempty"` // Additional metadata
 }
 
 // ServerMessage represents a message sent from server to client

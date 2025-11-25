@@ -30,8 +30,8 @@ func NewService(db *gorm.DB, redis *redis.Client) *Service {
 // StartTripRequest contains parameters for starting a new trip
 type StartTripRequest struct {
 	UserID           uuid.UUID `json:"user_id"`
-	Route            string    `json:"route" binding:"required"`           // "Tokyo → Osaka"
-	TrainNumber      *string   `json:"train_number,omitempty"`             // "Nozomi 123"
+	Route            string    `json:"route" binding:"required"` // "Tokyo → Osaka"
+	TrainNumber      *string   `json:"train_number,omitempty"`   // "Nozomi 123"
 	DepartureTime    time.Time `json:"departure_time" binding:"required"`
 	EstimatedArrival time.Time `json:"estimated_arrival" binding:"required"`
 }
@@ -131,18 +131,20 @@ func (s *Service) EndTrip(ctx context.Context, req *EndTripRequest) (*model.Trip
 	}
 
 	// Remove from Redis cache
-	cacheKey := fmt.Sprintf("trip:ble:%s", trip.BLEAnonymousID)
-	s.redis.Del(ctx, cacheKey)
+	if s.redis != nil {
+		cacheKey := fmt.Sprintf("trip:ble:%s", trip.BLEAnonymousID)
+		s.redis.Del(ctx, cacheKey)
 
-	userCacheKey := fmt.Sprintf("trip:user:%s:active", req.UserID.String())
-	s.redis.Del(ctx, userCacheKey)
+		userCacheKey := fmt.Sprintf("trip:user:%s:active", req.UserID.String())
+		s.redis.Del(ctx, userCacheKey)
+	}
 
 	return &trip, nil
 }
 
 // GetActiveTrip retrieves user's current active trip
 func (s *Service) GetActiveTrip(ctx context.Context, userID uuid.UUID) (*model.Trip, error) {
-	// Try cache first (skip if Redis is nil, e.g., in tests)
+	// Try cache first (if Redis is available)
 	if s.redis != nil {
 		userCacheKey := fmt.Sprintf("trip:user:%s:active", userID.String())
 		tripIDStr, err := s.redis.Get(ctx, userCacheKey).Result()
@@ -173,7 +175,7 @@ func (s *Service) GetActiveTrip(ctx context.Context, userID uuid.UUID) (*model.T
 		return nil, fmt.Errorf("failed to fetch active trip: %w", err)
 	}
 
-	// Update cache (skip if Redis is nil, e.g., in tests)
+	// Update cache
 	if s.redis != nil {
 		userCacheKey := fmt.Sprintf("trip:user:%s:active", userID.String())
 		s.redis.Set(ctx, userCacheKey, trip.ID.String(), 24*time.Hour)
@@ -201,23 +203,25 @@ func (s *Service) GetTripByID(ctx context.Context, tripID, userID uuid.UUID) (*m
 
 // GetTripByBLEID retrieves a trip by BLE anonymous ID (for discovery)
 func (s *Service) GetTripByBLEID(ctx context.Context, bleID string) (*model.Trip, error) {
-	// Try cache first
-	cacheKey := fmt.Sprintf("trip:ble:%s", bleID)
-	tripIDStr, err := s.redis.Get(ctx, cacheKey).Result()
+	// Try cache first (if Redis is available)
+	if s.redis != nil {
+		cacheKey := fmt.Sprintf("trip:ble:%s", bleID)
+		tripIDStr, err := s.redis.Get(ctx, cacheKey).Result()
 
-	if err == nil && tripIDStr != "" {
-		tripID, err := uuid.Parse(tripIDStr)
-		if err == nil {
-			var trip model.Trip
-			if err := s.db.WithContext(ctx).First(&trip, tripID).Error; err == nil {
-				return &trip, nil
+		if err == nil && tripIDStr != "" {
+			tripID, err := uuid.Parse(tripIDStr)
+			if err == nil {
+				var trip model.Trip
+				if err := s.db.WithContext(ctx).First(&trip, tripID).Error; err == nil {
+					return &trip, nil
+				}
 			}
 		}
 	}
 
 	// Not in cache, query DB
 	var trip model.Trip
-	err = s.db.WithContext(ctx).
+	err := s.db.WithContext(ctx).
 		Where("ble_anonymous_id = ? AND status = ?", bleID, model.TripStatusActive).
 		First(&trip).Error
 
@@ -229,7 +233,10 @@ func (s *Service) GetTripByBLEID(ctx context.Context, bleID string) (*model.Trip
 	}
 
 	// Update cache
-	s.redis.Set(ctx, cacheKey, trip.ID.String(), 24*time.Hour)
+	if s.redis != nil {
+		cacheKey := fmt.Sprintf("trip:ble:%s", bleID)
+		s.redis.Set(ctx, cacheKey, trip.ID.String(), 24*time.Hour)
+	}
 
 	return &trip, nil
 }
@@ -288,11 +295,13 @@ func (s *Service) CancelTrip(ctx context.Context, tripID, userID uuid.UUID) erro
 	}
 
 	// Clear cache
-	cacheKey := fmt.Sprintf("trip:ble:%s", trip.BLEAnonymousID)
-	s.redis.Del(ctx, cacheKey)
+	if s.redis != nil {
+		cacheKey := fmt.Sprintf("trip:ble:%s", trip.BLEAnonymousID)
+		s.redis.Del(ctx, cacheKey)
 
-	userCacheKey := fmt.Sprintf("trip:user:%s:active", userID.String())
-	s.redis.Del(ctx, userCacheKey)
+		userCacheKey := fmt.Sprintf("trip:user:%s:active", userID.String())
+		s.redis.Del(ctx, userCacheKey)
+	}
 
 	return nil
 }

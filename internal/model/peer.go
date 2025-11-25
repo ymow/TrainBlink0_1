@@ -17,17 +17,17 @@ const (
 
 // Peer represents a nearby peer discovered via P2P or server
 type Peer struct {
-	ID             uuid.UUID           `json:"id" gorm:"type:uuid;primaryKey"`
-	DisplayName    string              `json:"display_name" gorm:"size:50;not null"`
+	ID              uuid.UUID           `json:"id" gorm:"type:uuid;primaryKey"`
+	DisplayName     string              `json:"display_name" gorm:"size:50;not null"`
 	ConnectionState PeerConnectionState `json:"connection_state" gorm:"type:varchar(20);default:'NOT_CONNECTED'"`
-	DiscoveredAt   time.Time           `json:"discovered_at" gorm:"not null"`
-	LastSeenAt     time.Time           `json:"last_seen_at" gorm:"not null"`
-	SignalStrength *float64            `json:"signal_strength,omitempty" gorm:"type:decimal(5,2)"`
-	StationID      string              `json:"station_id" gorm:"size:20"`
-	EndpointID     *string             `json:"endpoint_id,omitempty" gorm:"size:100"`
-	Metadata       map[string]string   `json:"metadata,omitempty" gorm:"type:jsonb"`
-	CreatedAt      time.Time           `json:"created_at"`
-	UpdatedAt      time.Time           `json:"updated_at"`
+	DiscoveredAt    time.Time           `json:"discovered_at" gorm:"not null"`
+	LastSeenAt      time.Time           `json:"last_seen_at" gorm:"not null"`
+	SignalStrength  *float64            `json:"signal_strength,omitempty" gorm:"type:decimal(5,2)"`
+	StationID       string              `json:"station_id" gorm:"size:20"`
+	EndpointID      *string             `json:"endpoint_id,omitempty" gorm:"size:100"`
+	Metadata        map[string]string   `json:"metadata,omitempty" gorm:"type:jsonb"`
+	CreatedAt       time.Time           `json:"created_at"`
+	UpdatedAt       time.Time           `json:"updated_at"`
 }
 
 // TableName overrides the table name
