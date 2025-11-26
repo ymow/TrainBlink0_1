@@ -132,6 +132,14 @@ func (c *DatabaseConfig) GetDSN() string {
 	)
 }
 
+// GetDatabaseURL returns the database URL, prioritizing DATABASE_URL environment variable
+func (c *DatabaseConfig) GetDatabaseURL() string {
+	if url := os.Getenv("DATABASE_URL"); url != "" {
+		return url
+	}
+	return c.GetDSN()
+}
+
 // Helper functions
 
 func getEnv(key, defaultValue string) string {

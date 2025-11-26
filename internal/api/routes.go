@@ -38,7 +38,8 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
 
 	// Initialize Matrix services (for Week 2)
 	// Note: In production, use actual Matrix homeserver URL from config
-	matrixClient := matrix.NewClient("https://matrix.trainblink.org")
+	// For development, use matrix.org as a public Matrix server
+	matrixClient := matrix.NewClient("https://matrix.org")
 	ephemeralRoomMgr := matrix.NewEphemeralRoomManager(matrixClient, db)
 
 	// Initialize cleanup service
@@ -49,6 +50,9 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
 	discoveryHandler := NewDiscoveryHandler(discoveryService)
 	matrixHandler := NewMatrixHandler(ephemeralRoomMgr, tripService)
 	cleanupHandler := NewCleanupHandler(cleanupService)
+	connectionsHandler := NewConnectionsHandler()
+	messageHandler := NewMessageHandler(db)
+	websocketHandler := NewWebSocketHandler(connectionsHandler)
 
 	// API v1 routes
 	v1 := router.Group("/api/v1")
@@ -104,10 +108,14 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
 			cleanupGroup.GET("/expiring-rooms", cleanupHandler.GetExpiringRoomWarnings)
 		}
 
+		// Chat endpoints (Phase 0)
+		v1.GET("/connections", connectionsHandler.GetConnections)
+		v1.POST("/message", messageHandler.PostMessage)
+
 		// TODO: Add more endpoints in future phases
 		// v1.POST("/auth/anonymous", handlers.AnonymousAuthHandler)
 	}
 
 	// WebSocket endpoint (Phase 0 - Day 2)
-	// router.GET("/ws", handlers.WebSocketHandler)
+	router.GET("/ws", websocketHandler.HandleWebSocket)
 }

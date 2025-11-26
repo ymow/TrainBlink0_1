@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 
 	"github.com/ymow/messenger_protocol_research/internal/api"
 	"github.com/ymow/messenger_protocol_research/internal/cache"
@@ -55,14 +56,38 @@ func main() {
 		logger.Fatal("Failed to load configuration", zap.Error(err))
 	}
 
-	// Initialize PostgreSQL
-	db, err := database.NewPostgresDB(cfg.Database)
+	// Initialize Database (SQLite or PostgreSQL)
+	var db *gorm.DB
+	
+	// Re-enable database connectivity for Matrix integration
+	databaseURL := cfg.Database.GetDatabaseURL()
+	if databaseURL == "" {
+		logger.Fatal("Database URL is required", zap.String("url", databaseURL))
+	}
+
+	if len(databaseURL) >= 9 && databaseURL[0:9] == "sqlite://" {
+		// Use SQLite
+		db, err = database.NewSQLiteDB(databaseURL)
+		if err != nil {
+			logger.Fatal("Failed to connect to SQLite database", zap.Error(err))
+		}
+		logger.Info("Database connected", zap.String("type", "SQLite"), zap.String("path", databaseURL[9:]))
+	} else {
+		// Use PostgreSQL
+		db, err = database.NewPostgresDB(cfg.Database)
+		if err != nil {
+			logger.Fatal("Failed to connect to PostgreSQL database", zap.Error(err))
+		}
+		logger.Info("Database connected", zap.String("type", "PostgreSQL"))
+	}
+	
 	if err != nil {
 		logger.Fatal("Failed to connect to database", zap.Error(err))
 	}
 	defer func() {
-		if err := database.Close(db); err != nil {
-			logger.Error("Failed to close database", zap.Error(err))
+		// Skip database cleanup for now
+		if db != nil {
+			// database.Close(db)
 		}
 	}()
 
