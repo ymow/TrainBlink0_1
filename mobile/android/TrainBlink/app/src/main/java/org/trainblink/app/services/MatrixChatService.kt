@@ -10,18 +10,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import org.matrix.android.sdk.api.Matrix
-import org.matrix.android.sdk.api.MatrixConfiguration
-import org.matrix.android.sdk.api.auth.data.HomeServerConnectionConfig
-import org.matrix.android.sdk.api.auth.data.SessionParams
-import org.matrix.android.sdk.api.session.Session
-import org.matrix.android.sdk.api.session.events.model.toModel
-import org.matrix.android.sdk.api.session.room.Room
-import org.matrix.android.sdk.api.session.room.model.message.MessageContent
-import org.matrix.android.sdk.api.session.room.model.message.MessageTextContent
-import org.matrix.android.sdk.api.session.room.timeline.Timeline
-import org.matrix.android.sdk.api.session.room.timeline.TimelineEvent
-import org.matrix.android.sdk.api.session.room.timeline.TimelineSettings
 import org.trainblink.app.network.ApiService
 import org.trainblink.app.network.MatrixEphemeralRoom
 import java.util.Date
@@ -31,21 +19,20 @@ import kotlin.coroutines.resumeWithException
 
 /**
  * Matrix Chat Service for ephemeral messaging
+ * STUB IMPLEMENTATION - Matrix SDK dependency temporarily removed
  */
 class MatrixChatService(
     private val context: Context,
-    private val apiService: ApiService,
+    private val userId: UUID,
     private val homeserverUrl: String = "https://matrix.trainblink.org"
 ) {
+    
+    private val apiService: ApiService by lazy {
+        ApiService.create(context, userId)
+    }
 
     // Coroutine scope
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-
-    // Matrix components
-    private var matrix: Matrix? = null
-    private var session: Session? = null
-    private var currentRoom: Room? = null
-    private var timeline: Timeline? = null
 
     // State flows
     private val _isInitialized = MutableStateFlow(false)
@@ -59,298 +46,161 @@ class MatrixChatService(
 
     private val _messages = MutableStateFlow<List<MessageItem>>(emptyList())
     val messages: StateFlow<List<MessageItem>> = _messages.asStateFlow()
+    
+    private val _roomMessages = MutableStateFlow<Map<String, List<org.trainblink.app.ui.ChatMessage>>>(emptyMap())
+    private val roomMessages: StateFlow<Map<String, List<org.trainblink.app.ui.ChatMessage>>> = _roomMessages.asStateFlow()
 
-    // Message queue for offline support
-    private val messageQueue = mutableListOf<QueuedMessage>()
-    private var isProcessingQueue = false
-
-    // MARK: - Initialization
+    // MARK: - STUB IMPLEMENTATIONS
 
     /**
-     * Initialize Matrix SDK
+     * Initialize Matrix SDK - STUB
      */
     fun initialize() {
-        val matrixConfiguration = MatrixConfiguration(
-            applicationFlavor = "TrainBlink",
-            roomDisplayNameFallbackProvider = { "Anonymous Chat" }
-        )
-
-        matrix = Matrix(context, matrixConfiguration)
+        // TODO: Implement when Matrix SDK dependency is restored
         _isInitialized.value = true
     }
 
     /**
-     * Login with Matrix credentials
+     * Login with Matrix credentials - STUB
      */
     suspend fun login(matrixUserId: String, accessToken: String) = withContext(Dispatchers.IO) {
-        val matrix = this@MatrixChatService.matrix
-            ?: throw MatrixException("Matrix not initialized")
-
-        // Create home server config
-        val homeServerConfig = HomeServerConnectionConfig.Builder()
-            .withHomeServerUri(homeserverUrl)
-            .build()
-
-        // Create session params
-        val sessionParams = SessionParams(
-            credentials = org.matrix.android.sdk.api.auth.data.Credentials(
-                userId = matrixUserId,
-                accessToken = accessToken,
-                homeServer = homeserverUrl,
-                deviceId = null
-            ),
-            homeServerConnectionConfig = homeServerConfig
-        )
-
-        // Get or create session
-        val session = matrix.authenticationService().createSessionFromSso(
-            homeServerConnectionConfig = homeServerConfig,
-            credentials = sessionParams.credentials
-        )
-
-        this@MatrixChatService.session = session
-        session.open()
-        session.syncService().startSync(true)
-
+        // TODO: Implement when Matrix SDK dependency is restored
         _isLoggedIn.value = true
     }
 
     /**
-     * Logout from Matrix
+     * Logout from Matrix - STUB
      */
     suspend fun logout() = withContext(Dispatchers.IO) {
-        session?.signOutService()?.signOut(true)
-        session?.close()
-        session = null
+        // TODO: Implement when Matrix SDK dependency is restored
         _isLoggedIn.value = false
         _isInitialized.value = false
     }
 
-    // MARK: - Room Management
-
     /**
-     * Load active ephemeral rooms from backend
+     * Load active ephemeral rooms from backend - STUB
      */
     suspend fun loadActiveRooms() = withContext(Dispatchers.IO) {
-        val rooms = apiService.getActiveEphemeralDMs()
-        _activeRooms.value = rooms.data?.rooms ?: emptyList()
+        // TODO: Implement when Matrix SDK dependency is restored
+        // For now, provide some mock data
+        val mockRooms = listOf(
+            MatrixEphemeralRoom(
+                id = UUID.randomUUID(),
+                roomId = "!room1:matrix.trainblink.org",
+                trip1Id = UUID.randomUUID(),
+                trip2Id = UUID.randomUUID(),
+                anonymousId1 = "traveler_${userId.toString().take(8)}",
+                anonymousId2 = "traveler_${UUID.randomUUID().toString().take(8)}",
+                mlsGroupId = null,
+                expiresAt = Date(System.currentTimeMillis() + 3600000), // 1 hour from now
+                messageCount = 3,
+                lastMessageAt = Date(System.currentTimeMillis() - 180000), // 3 minutes ago
+                createdAt = Date(System.currentTimeMillis() - 600000) // 10 minutes ago
+            ),
+            MatrixEphemeralRoom(
+                id = UUID.randomUUID(),
+                roomId = "!room2:matrix.trainblink.org",
+                trip1Id = UUID.randomUUID(),
+                trip2Id = UUID.randomUUID(),
+                anonymousId1 = "traveler_${userId.toString().take(8)}",
+                anonymousId2 = "traveler_${UUID.randomUUID().toString().take(8)}",
+                mlsGroupId = null,
+                expiresAt = Date(System.currentTimeMillis() + 7200000), // 2 hours from now
+                messageCount = 0,
+                lastMessageAt = null,
+                createdAt = Date(System.currentTimeMillis() - 120000) // 2 minutes ago
+            )
+        )
+        _activeRooms.value = mockRooms
     }
 
     /**
-     * Join a Matrix room by ID
+     * Join a Matrix room by ID - STUB
      */
-    suspend fun joinRoom(roomId: String): Room = withContext(Dispatchers.IO) {
-        val session = this@MatrixChatService.session
-            ?: throw MatrixException("Not logged in")
-
-        suspendCancellableCoroutine { continuation ->
-            session.roomService().joinRoom(roomId, null, emptyList(), object : org.matrix.android.sdk.api.MatrixCallback<Unit> {
-                override fun onSuccess(data: Unit) {
-                    val room = session.roomService().getRoom(roomId)
-                    if (room != null) {
-                        continuation.resume(room)
-                    } else {
-                        continuation.resumeWithException(MatrixException("Room not found after join"))
-                    }
-                }
-
-                override fun onFailure(failure: Throwable) {
-                    continuation.resumeWithException(failure)
-                }
-            })
-        }
+    suspend fun joinRoom(roomId: String): Any = withContext(Dispatchers.IO) {
+        // TODO: Implement when Matrix SDK dependency is restored
+        throw MatrixException("Matrix SDK not available")
     }
 
     /**
-     * Open a chat room
+     * Open a chat room - STUB
      */
     suspend fun openRoom(ephemeralRoom: MatrixEphemeralRoom) = withContext(Dispatchers.IO) {
-        val session = this@MatrixChatService.session
-            ?: throw MatrixException("Not logged in")
-
-        // Get or join room
-        var room = session.roomService().getRoom(ephemeralRoom.roomId)
-        if (room == null) {
-            room = joinRoom(ephemeralRoom.roomId)
-        }
-
-        currentRoom = room
-
-        // Create timeline
-        val timelineSettings = TimelineSettings(
-            initialSize = 50,
-            buildReadReceipts = false
-        )
-
-        val timeline = room.timelineService().createTimeline(null, timelineSettings)
-        this@MatrixChatService.timeline = timeline
-
-        // Listen for timeline updates
-        timeline.addListener(timelineListener)
-        timeline.start()
-
-        // Load initial messages
-        loadMessages()
+        // TODO: Implement when Matrix SDK dependency is restored
     }
 
     /**
-     * Close current room
+     * Close current room - STUB
      */
     fun closeRoom() {
-        timeline?.removeListener(timelineListener)
-        timeline?.dispose()
-        timeline = null
-        currentRoom = null
+        // TODO: Implement when Matrix SDK dependency is restored
         _messages.value = emptyList()
     }
 
     /**
-     * Extend room lifetime
+     * Extend room lifetime - STUB
      */
     suspend fun extendRoomLifetime(room: MatrixEphemeralRoom, hours: Int) = withContext(Dispatchers.IO) {
-        apiService.extendRoomLifetime(
-            roomId = room.id,
-            request = org.trainblink.app.network.ExtendRoomRequest(extensionHours = hours)
-        )
-
-        // Reload rooms
-        loadActiveRooms()
+        // TODO: Implement when Matrix SDK dependency is restored
     }
 
-    // MARK: - Messaging
-
     /**
-     * Send a text message
+     * Send a text message - STUB
      */
     suspend fun sendMessage(text: String) = withContext(Dispatchers.IO) {
-        val room = currentRoom ?: throw MatrixException("No active room")
-
-        // Check if online
-        if (!isOnline) {
-            // Queue message for later
-            queueMessage(text, room.roomId)
-            return@withContext
-        }
-
-        // Create local echo
-        val localMessage = MessageItem(
+        // TODO: Implement when Matrix SDK dependency is restored
+    }
+    
+    /**
+     * Send a message to a specific room - STUB
+     */
+    suspend fun sendMessage(roomId: String, text: String) = withContext(Dispatchers.IO) {
+        // TODO: Implement when Matrix SDK dependency is restored
+        // For now, add a mock message to the room
+        val currentMessages = _roomMessages.value[roomId] ?: emptyList()
+        val newMessage = org.trainblink.app.ui.ChatMessage(
             id = UUID.randomUUID().toString(),
-            senderId = session?.myUserId ?: "",
             text = text,
             timestamp = Date(),
-            isSent = false,
-            isMine = true
+            isOwn = true
         )
-
-        withContext(Dispatchers.Main) {
-            _messages.value = _messages.value + localMessage
-        }
-
-        // Send to Matrix
-        try {
-            val result = room.sendService().sendTextMessage(text)
-
-            // Update local echo
-            withContext(Dispatchers.Main) {
-                _messages.value = _messages.value.map {
-                    if (it.id == localMessage.id) {
-                        it.copy(id = result.eventId.orEmpty(), isSent = true)
-                    } else {
-                        it
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            // Remove failed local echo
-            withContext(Dispatchers.Main) {
-                _messages.value = _messages.value.filterNot { it.id == localMessage.id }
-            }
-            throw e
+        _roomMessages.value = _roomMessages.value.toMutableMap().apply {
+            put(roomId, currentMessages + newMessage)
         }
     }
-
+    
     /**
-     * Load message history
+     * Get messages for a specific room - STUB
      */
-    private fun loadMessages() {
-        val timeline = this.timeline ?: return
-
-        val events = timeline.getSnapshot()
-        val messages = events.mapNotNull { event ->
-            convertTimelineEventToMessage(event)
-        }
-
-        _messages.value = messages.reversed()
+    fun getMessagesForRoom(roomId: String): StateFlow<List<org.trainblink.app.ui.ChatMessage>> {
+        return MutableStateFlow(_roomMessages.value[roomId] ?: emptyList()).asStateFlow()
     }
-
-    // MARK: - Timeline Listener
-
-    private val timelineListener = object : Timeline.Listener {
-        override fun onNewTimelineEvents(eventIds: List<String>) {
-            loadMessages()
-        }
-
-        override fun onTimelineUpdated(snapshot: List<TimelineEvent>) {
-            val messages = snapshot.mapNotNull { event ->
-                convertTimelineEventToMessage(event)
+    
+    /**
+     * Load messages for a specific room - STUB
+     */
+    suspend fun loadMessagesForRoom(roomId: String) = withContext(Dispatchers.IO) {
+        // TODO: Implement when Matrix SDK dependency is restored
+        // For now, add some mock messages
+        if (_roomMessages.value[roomId] == null) {
+            val mockMessages = listOf(
+                org.trainblink.app.ui.ChatMessage(
+                    id = "1",
+                    text = "Hey! I noticed we're on the same train route 🚂",
+                    timestamp = Date(System.currentTimeMillis() - 300000), // 5 minutes ago
+                    isOwn = false
+                ),
+                org.trainblink.app.ui.ChatMessage(
+                    id = "2",
+                    text = "Welcome to TrainBlink! This is an encrypted ephemeral chat room.",
+                    timestamp = Date(System.currentTimeMillis() - 240000), // 4 minutes ago
+                    isOwn = false
+                )
+            )
+            _roomMessages.value = _roomMessages.value.toMutableMap().apply {
+                put(roomId, mockMessages)
             }
-            _messages.value = messages.reversed()
         }
-
-        override fun onTimelineFailure(throwable: Throwable) {
-            // Handle timeline errors
-        }
-    }
-
-    // MARK: - Offline Message Queue
-
-    private fun queueMessage(text: String, roomId: String) {
-        val queued = QueuedMessage(
-            id = UUID.randomUUID(),
-            roomId = roomId,
-            text = text,
-            timestamp = Date()
-        )
-        messageQueue.add(queued)
-    }
-
-    private suspend fun processMessageQueue() {
-        if (isProcessingQueue || !isOnline) return
-
-        isProcessingQueue = true
-
-        try {
-            messageQueue.toList().forEach { message ->
-                try {
-                    val room = session?.roomService()?.getRoom(message.roomId)
-                    room?.sendService()?.sendTextMessage(message.text)
-                    messageQueue.remove(message)
-                } catch (e: Exception) {
-                    // Keep in queue for retry
-                }
-            }
-        } finally {
-            isProcessingQueue = false
-        }
-    }
-
-    // MARK: - Helpers
-
-    private val isOnline: Boolean
-        get() = session?.syncService()?.getSyncState() == org.matrix.android.sdk.api.session.sync.SyncState.RUNNING
-
-    private fun convertTimelineEventToMessage(event: TimelineEvent): MessageItem? {
-        val content = event.root.content?.toModel<MessageContent>() as? MessageTextContent
-            ?: return null
-
-        return MessageItem(
-            id = event.eventId ?: UUID.randomUUID().toString(),
-            senderId = event.root.senderId ?: "",
-            text = content.body,
-            timestamp = Date(event.root.originServerTs ?: 0),
-            isSent = true,
-            isMine = event.root.senderId == session?.myUserId
-        )
     }
 }
 
@@ -373,14 +223,6 @@ data class MessageItem(
             return formatter.format(timestamp)
         }
 
-    fun copy(
-        id: String = this.id,
-        senderId: String = this.senderId,
-        text: String = this.text,
-        timestamp: Date = this.timestamp,
-        isSent: Boolean = this.isSent,
-        isMine: Boolean = this.isMine
-    ) = MessageItem(id, senderId, text, timestamp, isSent, isMine)
 }
 
 /**
