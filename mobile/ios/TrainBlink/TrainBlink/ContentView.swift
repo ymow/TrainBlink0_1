@@ -21,7 +21,7 @@ struct ContentView: View {
                     .padding()
                 
                 VStack(spacing: 16) {
-                    NavigationLink(destination: NearbyTravelersView(bleManager: bleManager)) {
+                    NavigationLink(destination: NearbyTravelersView(bleManager: bleManager, apiService: apiService, chatManager: chatManager)) {
                         FeatureButton(icon: "antenna.radiowaves.left.and.right", title: "Nearby Travelers", subtitle: "Discover fellow passengers")
                     }
                     
@@ -41,8 +41,30 @@ struct ContentView: View {
             .navigationBarTitleDisplayMode(.large)
         }
         .onAppear {
-            // Set a demo user ID for development
-            apiService.setUserId(UUID())
+            Task {
+                // Set a demo user ID for development
+                let userId = UUID()
+                apiService.setUserId(userId)
+
+                // Login to Matrix
+                do {
+                    // TODO: Add backend endpoint to get Matrix credentials
+                    // For now, use dev credentials with user UUID
+                    let matrixUserId = "@\(userId.uuidString)_trainblink:matrix.trainblink.org"
+                    let accessToken = "dev_token_\(userId.uuidString)"
+
+                    try await chatManager.login(
+                        matrixUserId: matrixUserId,
+                        accessToken: accessToken
+                    )
+
+                    print("[ContentView] Matrix login successful for user: \(matrixUserId)")
+                } catch {
+                    print("[ContentView] Matrix login failed: \(error.localizedDescription)")
+                    // Don't block app usage if Matrix login fails
+                    // User can still browse and discover, just not chat
+                }
+            }
         }
     }
 }

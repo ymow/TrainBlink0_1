@@ -10,8 +10,13 @@ import SwiftUI
 struct NearbyTravelersView: View {
 
     @ObservedObject var bleManager: BLEDiscoveryManager
+    @ObservedObject var apiService: APIService
+    @ObservedObject var chatManager: MatrixChatManager
+
     @State private var selectedUser: DiscoveredUser?
     @State private var showingChatCreation = false
+    @State private var createdRoom: MatrixEphemeralRoom?
+    @State private var showingChat = false
 
     var freshDiscoveries: [DiscoveredUser] {
         bleManager.getFreshDiscoveries()
@@ -44,9 +49,27 @@ struct NearbyTravelersView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingChatCreation) {
             if let user = selectedUser {
-                CreateChatView(discoveredUser: user, isPresented: $showingChatCreation)
+                CreateChatView(
+                    discoveredUser: user,
+                    isPresented: $showingChatCreation,
+                    apiService: apiService,
+                    chatManager: chatManager,
+                    onRoomCreated: { room in
+                        createdRoom = room
+                        showingChat = true
+                    }
+                )
             }
         }
+        .background(
+            NavigationLink(
+                destination: createdRoom.map { room in
+                    ChatView(ephemeralRoom: room, chatManager: chatManager)
+                },
+                isActive: $showingChat,
+                label: { EmptyView() }
+            )
+        )
     }
 }
 
@@ -205,15 +228,13 @@ struct EmptyDiscoveriesView: View {
 struct CreateChatView: View {
     let discoveredUser: DiscoveredUser
     @Binding var isPresented: Bool
+    let onRoomCreated: (MatrixEphemeralRoom) -> Void
 
-    @StateObject private var viewModel: CreateChatViewModel
+    @ObservedObject var apiService: APIService
+    @ObservedObject var chatManager: MatrixChatManager
     @State private var isCreatingChat = false
-
-    init(discoveredUser: DiscoveredUser, isPresented: Binding<Bool>) {
-        self.discoveredUser = discoveredUser
-        self._isPresented = isPresented
-        self._viewModel = StateObject(wrappedValue: CreateChatViewModel(apiService: APIService()))
-    }
+    @State private var showError = false
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationView {
@@ -316,10 +337,10 @@ struct CreateChatView: View {
                     }
                 }
             }
-            .alert("Error", isPresented: $viewModel.showError) {
+            .alert("Error", isPresented: $showError) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text(viewModel.errorMessage ?? "Failed to create chat")
+                Text(errorMessage ?? "Failed to create chat")
             }
         }
     }
@@ -327,13 +348,30 @@ struct CreateChatView: View {
     private func createChat() {
         Task {
             isCreatingChat = true
-            let success = await viewModel.createEphemeralDM(discoveredUserBLEID: discoveredUser.id)
-            isCreatingChat = false
 
-            if success {
+            do {
+                // Create ephemeral DM room
+                let room = try await apiService.createEphemeralDM(
+                    discoveredUserBLEID: discoveredUser.id
+                )
+
+                // Open room in chat manager
+                try await chatManager.openRoom(room)
+
+                // Dismiss sheet
                 isPresented = false
-                // TODO: Navigate to chat view
+
+                // Navigate to chat view
+                onRoomCreated(room)
+
+                print("[CreateChatView] Successfully created and opened room: \(room.roomId)")
+            } catch {
+                errorMessage = error.localizedDescription
+                showError = true
+                print("[CreateChatView] Failed to create chat: \(error)")
             }
+
+            isCreatingChat = false
         }
     }
 }
@@ -357,34 +395,15 @@ struct PrivacyFeature: View {
     }
 }
 
-// MARK: - Create Chat View Model
-
-@MainActor
-class CreateChatViewModel: ObservableObject {
-
-    @Published var showError = false
-    @Published var errorMessage: String?
-
-    private let apiService: APIService
-
-    init(apiService: APIService) {
-        self.apiService = apiService
-    }
-
-    func createEphemeralDM(discoveredUserBLEID: String) async -> Bool {
-        do {
-            _ = try await apiService.createEphemeralDM(discoveredUserBLEID: discoveredUserBLEID)
-            return true
-        } catch {
-            errorMessage = error.localizedDescription
-            showError = true
-            return false
-        }
-    }
-}
+// MARK: - Create Chat View Model removed - now using apiService and chatManager directly
 
 #Preview {
     NavigationView {
-        NearbyTravelersView(bleManager: BLEDiscoveryManager(apiService: APIService()))
+        let api = APIService()
+        NearbyTravelersView(
+            bleManager: BLEDiscoveryManager(apiService: api),
+            apiService: api,
+            chatManager: MatrixChatManager(apiService: api)
+        )
     }
 }

@@ -3,43 +3,66 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		1A000001292ABCD0000001 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000002292ABCD0000001 /* App.swift */; };
-		1A000003292ABCD0000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000004292ABCD0000001 /* ContentView.swift */; };
-		1A000005292ABCD0000001 /* NearbyTravelersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000006292ABCD0000001 /* NearbyTravelersView.swift */; };
-		1A000007292ABCD0000001 /* TripSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000008292ABCD0000001 /* TripSelectionView.swift */; };
-		1A000009292ABCD0000001 /* ChatListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00000A292ABCD0000001 /* ChatListView.swift */; };
-		1A00000B292ABCD0000001 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00000C292ABCD0000001 /* ChatView.swift */; };
-		1A00000D292ABCD0000001 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00000E292ABCD0000001 /* APIService.swift */; };
-		1A00000F292ABCD0000001 /* BLEDiscoveryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000010292ABCD0000001 /* BLEDiscoveryManager.swift */; };
-		1A000011292ABCD0000001 /* MatrixChatManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000012292ABCD0000001 /* MatrixChatManager.swift */; };
-		1A000013292ABCD0000001 /* Discovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000014292ABCD0000001 /* Discovery.swift */; };
-		1A000015292ABCD0000001 /* Trip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000016292ABCD0000001 /* Trip.swift */; };
-		1A000017292ABCD0000001 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000018292ABCD0000001 /* AppConfig.swift */; };
-/* End PBXBuildFile section */
+/* Begin PBXContainerItemProxy section */
+		1A100001292ABCD0000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1A000027292ABCD0000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1A000023292ABCD0000001;
+			remoteInfo = TrainBlink;
+		};
+		1A100002292ABCD0000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1A000027292ABCD0000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1A000023292ABCD0000001;
+			remoteInfo = TrainBlink;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		1A000019292ABCD0000001 /* TrainBlink.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TrainBlink.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		1A000002292ABCD0000001 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
-		1A000004292ABCD0000001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		1A000006292ABCD0000001 /* NearbyTravelersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyTravelersView.swift; sourceTree = "<group>"; };
-		1A000008292ABCD0000001 /* TripSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripSelectionView.swift; sourceTree = "<group>"; };
-		1A00000A292ABCD0000001 /* ChatListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListView.swift; sourceTree = "<group>"; };
-		1A00000C292ABCD0000001 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
-		1A00000E292ABCD0000001 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
-		1A000010292ABCD0000001 /* BLEDiscoveryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEDiscoveryManager.swift; sourceTree = "<group>"; };
-		1A000012292ABCD0000001 /* MatrixChatManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixChatManager.swift; sourceTree = "<group>"; };
-		1A000014292ABCD0000001 /* Discovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Discovery.swift; sourceTree = "<group>"; };
-		1A000016292ABCD0000001 /* Trip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Trip.swift; sourceTree = "<group>"; };
-		1A000018292ABCD0000001 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
-		1A00001A292ABCD0000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		1A100003292ABCD0000001 /* TrainBlinkTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TrainBlinkTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A100004292ABCD0000001 /* TrainBlinkUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TrainBlinkUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		1A00001D292ABCD0000001 /* TrainBlink/TrainBlink */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TrainBlink/TrainBlink;
+			sourceTree = "<group>";
+		};
+		1A100005292ABCD0000001 /* TrainBlinkTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TrainBlinkTests;
+			sourceTree = "<group>";
+		};
+		1A100006292ABCD0000001 /* TrainBlinkUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TrainBlinkUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		1A00001B292ABCD0000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1A100007292ABCD0000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1A100008292ABCD0000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -52,69 +75,21 @@
 		1A00001C292ABCD0000001 = {
 			isa = PBXGroup;
 			children = (
-				1A00001D292ABCD0000001 /* TrainBlink */,
+				1A00001D292ABCD0000001 /* TrainBlink/TrainBlink */,
+				1A100005292ABCD0000001 /* TrainBlinkTests */,
+				1A100006292ABCD0000001 /* TrainBlinkUITests */,
 				1A00001E292ABCD0000001 /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		1A00001D292ABCD0000001 /* TrainBlink */ = {
-			isa = PBXGroup;
-			children = (
-				1A000002292ABCD0000001 /* App.swift */,
-				1A000004292ABCD0000001 /* ContentView.swift */,
-				1A00001F292ABCD0000001 /* Views */,
-				1A000020292ABCD0000001 /* Services */,
-				1A000021292ABCD0000001 /* Models */,
-				1A000022292ABCD0000001 /* Config */,
-				1A00001A292ABCD0000001 /* Info.plist */,
-			);
-			path = TrainBlink;
 			sourceTree = "<group>";
 		};
 		1A00001E292ABCD0000001 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				1A000019292ABCD0000001 /* TrainBlink.app */,
+				1A100003292ABCD0000001 /* TrainBlinkTests.xctest */,
+				1A100004292ABCD0000001 /* TrainBlinkUITests.xctest */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		1A00001F292ABCD0000001 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				1A000006292ABCD0000001 /* NearbyTravelersView.swift */,
-				1A000008292ABCD0000001 /* TripSelectionView.swift */,
-				1A00000A292ABCD0000001 /* ChatListView.swift */,
-				1A00000C292ABCD0000001 /* ChatView.swift */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		};
-		1A000020292ABCD0000001 /* Services */ = {
-			isa = PBXGroup;
-			children = (
-				1A00000E292ABCD0000001 /* APIService.swift */,
-				1A000010292ABCD0000001 /* BLEDiscoveryManager.swift */,
-				1A000012292ABCD0000001 /* MatrixChatManager.swift */,
-			);
-			path = Services;
-			sourceTree = "<group>";
-		};
-		1A000021292ABCD0000001 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				1A000014292ABCD0000001 /* Discovery.swift */,
-				1A000016292ABCD0000001 /* Trip.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		1A000022292ABCD0000001 /* Config */ = {
-			isa = PBXGroup;
-			children = (
-				1A000018292ABCD0000001 /* AppConfig.swift */,
-			);
-			path = Config;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -132,10 +107,61 @@
 			);
 			dependencies = (
 			);
+			fileSystemSynchronizedGroups = (
+				1A00001D292ABCD0000001 /* TrainBlink/TrainBlink */,
+			);
 			name = TrainBlink;
+			packageProductDependencies = (
+			);
 			productName = TrainBlink;
 			productReference = 1A000019292ABCD0000001 /* TrainBlink.app */;
 			productType = "com.apple.product-type.application";
+		};
+		1A100009292ABCD0000001 /* TrainBlinkTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1A10000A292ABCD0000001 /* Build configuration list for PBXNativeTarget "TrainBlinkTests" */;
+			buildPhases = (
+				1A10000B292ABCD0000001 /* Sources */,
+				1A100007292ABCD0000001 /* Frameworks */,
+				1A10000C292ABCD0000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1A10000D292ABCD0000001 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				1A100005292ABCD0000001 /* TrainBlinkTests */,
+			);
+			name = TrainBlinkTests;
+			packageProductDependencies = (
+			);
+			productName = TrainBlinkTests;
+			productReference = 1A100003292ABCD0000001 /* TrainBlinkTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		1A10000E292ABCD0000001 /* TrainBlinkUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1A10000F292ABCD0000001 /* Build configuration list for PBXNativeTarget "TrainBlinkUITests" */;
+			buildPhases = (
+				1A100010292ABCD0000001 /* Sources */,
+				1A100008292ABCD0000001 /* Frameworks */,
+				1A100011292ABCD0000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1A100012292ABCD0000001 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				1A100006292ABCD0000001 /* TrainBlinkUITests */,
+			);
+			name = TrainBlinkUITests;
+			packageProductDependencies = (
+			);
+			productName = TrainBlinkUITests;
+			productReference = 1A100004292ABCD0000001 /* TrainBlinkUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
@@ -144,16 +170,23 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
 				TargetAttributes = {
 					1A000023292ABCD0000001 = {
 						CreatedOnToolsVersion = 15.0;
 					};
+					1A100009292ABCD0000001 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 1A000023292ABCD0000001;
+					};
+					1A10000E292ABCD0000001 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 1A000023292ABCD0000001;
+					};
 				};
 			};
 			buildConfigurationList = 1A000028292ABCD0000001 /* Build configuration list for PBXProject "TrainBlink" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -161,17 +194,35 @@
 				Base,
 			);
 			mainGroup = 1A00001C292ABCD0000001;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
 			productRefGroup = 1A00001E292ABCD0000001 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				1A000023292ABCD0000001 /* TrainBlink */,
+				1A100009292ABCD0000001 /* TrainBlinkTests */,
+				1A10000E292ABCD0000001 /* TrainBlinkUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		1A000026292ABCD0000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1A10000C292ABCD0000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1A100011292ABCD0000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -185,22 +236,37 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1A000001292ABCD0000001 /* App.swift in Sources */,
-				1A000003292ABCD0000001 /* ContentView.swift in Sources */,
-				1A000005292ABCD0000001 /* NearbyTravelersView.swift in Sources */,
-				1A000007292ABCD0000001 /* TripSelectionView.swift in Sources */,
-				1A000009292ABCD0000001 /* ChatListView.swift in Sources */,
-				1A00000B292ABCD0000001 /* ChatView.swift in Sources */,
-				1A00000D292ABCD0000001 /* APIService.swift in Sources */,
-				1A00000F292ABCD0000001 /* BLEDiscoveryManager.swift in Sources */,
-				1A000011292ABCD0000001 /* MatrixChatManager.swift in Sources */,
-				1A000013292ABCD0000001 /* Discovery.swift in Sources */,
-				1A000015292ABCD0000001 /* Trip.swift in Sources */,
-				1A000017292ABCD0000001 /* AppConfig.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1A10000B292ABCD0000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1A100010292ABCD0000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1A10000D292ABCD0000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1A000023292ABCD0000001 /* TrainBlink */;
+			targetProxy = 1A100001292ABCD0000001 /* PBXContainerItemProxy */;
+		};
+		1A100012292ABCD0000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1A000023292ABCD0000001 /* TrainBlink */;
+			targetProxy = 1A100002292ABCD0000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1A000029292ABCD0000001 /* Debug */ = {
@@ -329,15 +395,15 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = TrainBlink/Info.plist;
+				INFOPLIST_FILE = TrainBlink/TrainBlink/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -358,15 +424,15 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = TrainBlink/Info.plist;
+				INFOPLIST_FILE = TrainBlink/TrainBlink/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -377,6 +443,76 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		1A100013292ABCD0000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.trainblink.app.TrainBlinkTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TrainBlink.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TrainBlink";
+			};
+			name = Debug;
+		};
+		1A100014292ABCD0000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.trainblink.app.TrainBlinkTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TrainBlink.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TrainBlink";
+			};
+			name = Release;
+		};
+		1A100015292ABCD0000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.trainblink.app.TrainBlinkUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TrainBlink;
+			};
+			name = Debug;
+		};
+		1A100016292ABCD0000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.trainblink.app.TrainBlinkUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TrainBlink;
 			};
 			name = Release;
 		};
@@ -397,6 +533,24 @@
 			buildConfigurations = (
 				1A000029292ABCD0000001 /* Debug */,
 				1A00002A292ABCD0000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1A10000A292ABCD0000001 /* Build configuration list for PBXNativeTarget "TrainBlinkTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A100013292ABCD0000001 /* Debug */,
+				1A100014292ABCD0000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1A10000F292ABCD0000001 /* Build configuration list for PBXNativeTarget "TrainBlinkUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A100015292ABCD0000001 /* Debug */,
+				1A100016292ABCD0000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

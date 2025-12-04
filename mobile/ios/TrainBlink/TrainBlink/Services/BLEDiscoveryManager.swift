@@ -41,6 +41,9 @@ class BLEDiscoveryManager: NSObject, ObservableObject {
     // Callback for discovery events
     var onDiscoveryEvent: ((DiscoveredUser) -> Void)?
 
+    // Store RSSI values from didDiscover callback (keyed by peripheral UUID)
+    private var peripheralRSSI: [UUID: Int] = [:]
+
     // MARK: - Initialization
 
     init(apiService: APIService) {
@@ -275,6 +278,9 @@ extension BLEDiscoveryManager: CBCentralManagerDelegate {
         // Filter out weak signals (beyond 100m)
         guard rssiValue > -100 else { return }
 
+        // Store RSSI value for this peripheral (will be used when characteristic is read)
+        peripheralRSSI[peripheral.identifier] = rssiValue
+
         // Store peripheral for connection
         peripheral.delegate = self
         central.connect(peripheral, options: nil)
@@ -320,13 +326,21 @@ extension BLEDiscoveryManager: CBPeripheralDelegate {
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         guard let data = characteristic.value,
-              let anonymousId = String(data: data, encoding: .utf8),
-              let rssi = peripheral.rssi?.intValue else {
+              let anonymousId = String(data: data, encoding: .utf8) else {
+            return
+        }
+
+        // Retrieve RSSI value stored from didDiscover callback
+        guard let rssi = peripheralRSSI[peripheral.identifier] else {
+            print("[BLE] Warning: No RSSI value found for peripheral \(peripheral.identifier)")
             return
         }
 
         // Process the discovery
         processDiscovery(anonymousId: anonymousId, rssi: rssi)
+
+        // Clean up RSSI value after use
+        peripheralRSSI.removeValue(forKey: peripheral.identifier)
 
         // Disconnect after reading
         centralManager.cancelPeripheralConnection(peripheral)
@@ -388,8 +402,4 @@ extension BLEDiscoveryManager: CBPeripheralManagerDelegate {
 
 // MARK: - Helper Extension
 
-extension CBPeripheral {
-    var rssi: NSNumber? {
-        return nil // Note: RSSI is obtained during discovery, not from peripheral object
-    }
-}
+// Note: RSSI is captured in didDiscover callback and stored in peripheralRSSI dictionary
