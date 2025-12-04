@@ -3,164 +3,91 @@
 //  TrainBlink
 //
 //  List of active ephemeral chat rooms
+//  Rebuilt following stream-chat-swift patterns with ChatRoomRow component
 //
 
 import SwiftUI
 
 struct ChatListView: View {
-
-    @StateObject private var viewModel: ChatListViewModel
+    @ObservedObject var apiService: APIService
     @ObservedObject var chatManager: MatrixChatManager
 
-    init(apiService: APIService, chatManager: MatrixChatManager) {
-        _viewModel = StateObject(wrappedValue: ChatListViewModel(apiService: apiService))
-        self.chatManager = chatManager
-    }
+    @State private var isLoading = false
+    @State private var showError = false
+    @State private var errorMessage: String?
 
     var body: some View {
-        NavigationView {
-            ZStack {
-                if viewModel.activeRooms.isEmpty {
-                    EmptyChatsView()
-                } else {
-                    List(viewModel.activeRooms) { room in
-                        NavigationLink(destination: ChatView(ephemeralRoom: room, chatManager: chatManager)) {
-                            ChatRoomRow(room: room)
-                        }
-                    }
-                    .listStyle(.plain)
-                    .refreshable {
-                        await viewModel.loadActiveRooms()
-                    }
-                }
+        Group {
+            if chatManager.activeRooms.isEmpty && !isLoading {
+                emptyStateView
+            } else {
+                roomListView
             }
-            .navigationTitle("Chats")
-            .navigationBarTitleDisplayMode(.large)
-            .task {
-                await viewModel.loadActiveRooms()
-            }
-            .alert("Error", isPresented: $viewModel.showError) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(viewModel.errorMessage ?? "An error occurred")
+        }
+        .navigationTitle("Chats")
+        .navigationBarTitleDisplayMode(.large)
+        .refreshable {
+            await loadRooms()
+        }
+        .task {
+            await loadRooms()
+        }
+        .alert("Error", isPresented: $showError) {
+            Button("OK") { }
+        } message: {
+            if let errorMessage = errorMessage {
+                Text(errorMessage)
             }
         }
     }
-}
 
-// MARK: - Chat Room Row
+    // MARK: - Views
 
-struct ChatRoomRow: View {
-    let room: MatrixEphemeralRoom
-
-    var body: some View {
-        HStack(spacing: 12) {
-            // Anonymous avatar
-            ZStack {
-                Circle()
-                    .fill(Color.blue.opacity(0.2))
-                    .frame(width: 50, height: 50)
-
-                Text("👤")
-                    .font(.system(size: 24))
-            }
-
-            // Room info
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Anonymous Traveler")
-                    .font(.headline)
-
-                if let lastMessageAt = room.lastMessageAt {
-                    Text("Last message \(lastMessageAt, style: .relative) ago")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                } else {
-                    Text("No messages yet")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+    private var roomListView: some View {
+        List {
+            ForEach(chatManager.activeRooms) { room in
+                NavigationLink(destination: ChatView(ephemeralRoom: room, chatManager: chatManager)) {
+                    ChatRoomRow(room: room)
                 }
-            }
-
-            Spacer()
-
-            VStack(alignment: .trailing, spacing: 4) {
-                // Message count badge
-                if room.messageCount > 0 {
-                    Text("\(room.messageCount)")
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.blue)
-                        .cornerRadius(12)
-                }
-
-                // Expiry indicator
-                HStack(spacing: 4) {
-                    Image(systemName: "timer")
-                        .font(.caption2)
-                    Text(room.timeRemainingFormatted)
-                        .font(.caption2)
-                }
-                .foregroundColor(room.isExpiringSoon ? .orange : .secondary)
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
             }
         }
-        .padding(.vertical, 4)
+        .listStyle(.plain)
+        .overlay {
+            if isLoading && chatManager.activeRooms.isEmpty {
+                ProgressView("Loading chats...")
+            }
+        }
     }
-}
 
-// MARK: - Empty Chats View
-
-struct EmptyChatsView: View {
-    var body: some View {
+    private var emptyStateView: some View {
         VStack(spacing: 20) {
-            Spacer()
-
-            Image(systemName: "bubble.left.and.bubble.right")
-                .font(.system(size: 60))
-                .foregroundColor(.gray)
+            Image(systemName: "message.circle")
+                .font(.system(size: 64))
+                .foregroundColor(.secondary)
 
             VStack(spacing: 8) {
                 Text("No Active Chats")
-                    .font(.title3)
+                    .font(.title2)
                     .fontWeight(.semibold)
 
-                Text("Discover nearby travelers and start a chat to see your conversations here")
-                    .font(.body)
+                Text("Discover nearby travelers\nto start chatting")
+                    .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
             }
-
-            Spacer()
         }
-    }
-}
-
-// MARK: - View Model
-
-@MainActor
-class ChatListViewModel: ObservableObject {
-
-    @Published var activeRooms: [MatrixEphemeralRoom] = []
-    @Published var isLoading = false
-    @Published var showError = false
-    @Published var errorMessage: String?
-
-    private let apiService: APIService
-
-    init(apiService: APIService) {
-        self.apiService = apiService
+        .padding()
     }
 
-    func loadActiveRooms() async {
+    // MARK: - Private Methods
+
+    private func loadRooms() async {
         isLoading = true
         defer { isLoading = false }
 
         do {
-            let rooms = try await apiService.getActiveEphemeralDMs()
-            activeRooms = rooms.sorted { $0.createdAt > $1.createdAt }
+            try await chatManager.loadActiveRooms()
         } catch {
             errorMessage = error.localizedDescription
             showError = true
@@ -168,9 +95,26 @@ class ChatListViewModel: ObservableObject {
     }
 }
 
-#Preview {
-    ChatListView(
-        apiService: APIService(),
-        chatManager: MatrixChatManager(apiService: APIService())
-    )
+// MARK: - Preview
+
+#Preview("With Rooms") {
+    NavigationView {
+        ChatListView(
+            apiService: APIService(),
+            chatManager: {
+                let manager = MatrixChatManager(apiService: APIService())
+                // Simulate rooms being loaded
+                return manager
+            }()
+        )
+    }
+}
+
+#Preview("Empty State") {
+    NavigationView {
+        ChatListView(
+            apiService: APIService(),
+            chatManager: MatrixChatManager(apiService: APIService())
+        )
+    }
 }

@@ -3,6 +3,7 @@
 //  TrainBlink
 //
 //  Matrix SDK integration for ephemeral messaging
+//  Implements ChatServiceProtocol following stream-chat-swift patterns
 //
 
 import Foundation
@@ -10,21 +11,32 @@ import MatrixSDK
 import Combine
 
 /// Matrix Chat Manager for ephemeral DM rooms
-class MatrixChatManager: ObservableObject {
+/// Conforms to ChatServiceProtocol for testability and abstraction
+class MatrixChatManager: ChatServiceProtocol, ObservableObject {
 
-    // MARK: - Published Properties
+    // MARK: - Published Properties (ChatServiceProtocol)
 
-    @Published var isInitialized: Bool = false
-    @Published var isLoggedIn: Bool = false
-    @Published var activeRooms: [MatrixEphemeralRoom] = []
-    @Published var currentRoom: MXRoom?
-    @Published var messages: [MessageItem] = []
+    @Published private(set) var isInitialized: Bool = false
+    @Published private(set) var isLoggedIn: Bool = false
+    @Published private(set) var activeRooms: [MatrixEphemeralRoom] = []
+    @Published private(set) var messages: [MessageItem] = []
+
+    // MARK: - Combine Publishers (ChatServiceProtocol)
+
+    var activeRoomsPublisher: AnyPublisher<[MatrixEphemeralRoom], Never> {
+        $activeRooms.eraseToAnyPublisher()
+    }
+
+    var messagesPublisher: AnyPublisher<[MessageItem], Never> {
+        $messages.eraseToAnyPublisher()
+    }
 
     // MARK: - Private Properties
 
     private var mxRestClient: MXRestClient?
     private var mxSession: MXSession?
     private var mxRoom: MXRoom?
+    private var currentRoomInfo: MatrixEphemeralRoom?
 
     private let homeserverURL: String
     private let apiService: APIService
@@ -144,44 +156,44 @@ class MatrixChatManager: ObservableObject {
         }
     }
 
-    /// Open a chat room
-    func openRoom(ephemeralRoom: MatrixEphemeralRoom) async throws {
+    /// Open a chat room (ChatServiceProtocol)
+    func openRoom(_ room: MatrixEphemeralRoom) async throws {
         guard let session = mxSession else {
             throw MatrixError.notLoggedIn
         }
 
         // Get or join room
-        var room = session.room(withRoomId: ephemeralRoom.roomId)
-        if room == nil {
-            room = try await joinRoom(roomId: ephemeralRoom.roomId)
+        var mxRoom = session.room(withRoomId: room.roomId)
+        if mxRoom == nil {
+            mxRoom = try await joinRoom(roomId: room.roomId)
         }
 
-        guard let room = room else {
+        guard let mxRoom = mxRoom else {
             throw MatrixError.roomNotFound
         }
 
-        mxRoom = room
-        currentRoom = room
+        self.mxRoom = mxRoom
+        self.currentRoomInfo = room
 
         // Load messages
-        await loadMessages(room: room)
+        await loadMessages(room: mxRoom)
 
         // Listen for new messages
-        setupRoomListeners(room: room)
+        setupRoomListeners(room: mxRoom)
 
-        print("[Matrix] Opened room: \(ephemeralRoom.roomId)")
+        print("[Matrix] Opened room: \(room.roomId)")
     }
 
-    /// Close current room
+    /// Close current room (ChatServiceProtocol)
     func closeRoom() {
         mxRoom = nil
-        currentRoom = nil
+        currentRoomInfo = nil
         messages = []
         print("[Matrix] Closed room")
     }
 
-    /// Extend room lifetime
-    func extendRoomLifetime(room: MatrixEphemeralRoom, hours: Int) async throws {
+    /// Extend room lifetime (ChatServiceProtocol)
+    func extendRoomLifetime(_ room: MatrixEphemeralRoom, hours: Int) async throws {
         try await apiService.extendRoomLifetime(roomId: room.id, extensionHours: hours)
 
         // Reload rooms to get updated expiry
@@ -192,8 +204,8 @@ class MatrixChatManager: ObservableObject {
 
     // MARK: - Messaging
 
-    /// Send a text message
-    func sendMessage(text: String) async throws {
+    /// Send a text message (ChatServiceProtocol)
+    func sendMessage(_ text: String) async throws {
         guard let room = mxRoom else {
             throw MatrixError.noActiveRoom
         }
@@ -248,12 +260,20 @@ class MatrixChatManager: ObservableObject {
         }
     }
 
-    /// Load message history
-    private func loadMessages(room: MXRoom) async {
+    /// Load message history (ChatServiceProtocol)
+    func loadMessageHistory(limit: Int = 50) async throws {
+        guard let room = mxRoom else {
+            throw MatrixError.noActiveRoom
+        }
+        await loadMessages(room: room, limit: limit)
+    }
+
+    /// Internal method to load messages
+    private func loadMessages(room: MXRoom, limit: Int = 50) async {
         let timeline = room.timelineLaggedWindow()
 
         await withCheckedContinuation { continuation in
-            timeline.paginate(50, direction: .backwards, onlyFromStore: false) { _ in
+            timeline.paginate(UInt(limit), direction: .backwards, onlyFromStore: false) { _ in
                 continuation.resume()
             } failure: { _ in
                 continuation.resume()
@@ -393,32 +413,6 @@ class MatrixChatManager: ObservableObject {
     private var isOnline: Bool {
         return mxSession?.state == .running
     }
-}
-
-// MARK: - Models
-
-/// Message item for UI display
-struct MessageItem: Identifiable, Equatable {
-    var id: String
-    let senderId: String
-    let text: String
-    let timestamp: Date
-    var isSent: Bool
-    let isMine: Bool
-
-    var timeFormatted: String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter.string(from: timestamp)
-    }
-}
-
-/// Queued message for offline delivery
-struct QueuedMessage: Identifiable {
-    let id: UUID
-    let roomId: String
-    let text: String
-    let timestamp: Date
 }
 
 // MARK: - Errors
