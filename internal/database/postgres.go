@@ -16,7 +16,8 @@ import (
 
 // NewPostgresDB creates a new PostgreSQL database connection
 func NewPostgresDB(cfg config.DatabaseConfig) (*gorm.DB, error) {
-	dsn := cfg.GetDSN()
+	// Use DATABASE_URL if available, otherwise build DSN from config
+	dsn := cfg.GetDatabaseURL()
 
 	// Configure GORM logger
 	gormLogger := logger.Default

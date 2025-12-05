@@ -17,9 +17,11 @@ CREATE TABLE user_sessions (
     exited_at TIMESTAMP WITH TIME ZONE,
     duration_seconds INTEGER,
 
-    -- Location
-    entry_coordinates GEOGRAPHY(POINT, 4326),
-    exit_coordinates GEOGRAPHY(POINT, 4326),
+    -- Location (经纬度)
+    entry_lat DOUBLE PRECISION,
+    entry_lon DOUBLE PRECISION,
+    exit_lat DOUBLE PRECISION,
+    exit_lon DOUBLE PRECISION,
 
     -- Capabilities
     capabilities JSONB,

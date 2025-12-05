@@ -24,7 +24,6 @@ CREATE TABLE IF NOT EXISTS discoveries (
 CREATE INDEX idx_discoveries_route ON discoveries(trip_route);
 CREATE INDEX idx_discoveries_timestamp ON discoveries(discovered_at);
 CREATE INDEX idx_discoveries_distance ON discoveries(distance_estimate);
-CREATE INDEX idx_discoveries_date ON discoveries(DATE(discovered_at));
 
 -- Comments for documentation
 COMMENT ON TABLE discoveries IS 'Anonymized BLE discovery analytics - no user_id for privacy';
