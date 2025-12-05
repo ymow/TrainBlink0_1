@@ -2,23 +2,29 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
+	"github.com/ymow/messenger_protocol_research/internal/message"
 	"github.com/ymow/messenger_protocol_research/internal/model"
 )
 
 // MessageHandler handles chat message operations
 type MessageHandler struct {
-	db *gorm.DB
+	db      *gorm.DB
+	service *message.Service
 }
 
 // NewMessageHandler creates a new message handler
-func NewMessageHandler(db *gorm.DB) *MessageHandler {
-	return &MessageHandler{db: db}
+func NewMessageHandler(db *gorm.DB, service *message.Service) *MessageHandler {
+	return &MessageHandler{
+		db:      db,
+		service: service,
+	}
 }
 
 // MessageRequest represents the request format for sending a message
@@ -90,4 +96,189 @@ func (h *MessageHandler) PostMessage(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, response)
+}
+
+// GetMessages handles GET /api/v1/messages - retrieve message history with pagination
+func (h *MessageHandler) GetMessages(c *gin.Context) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Unauthorized",
+			"code":  "UNAUTHORIZED",
+		})
+		return
+	}
+
+	// Parse query params with validation
+	limit := 20
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if parsed, err := strconv.Atoi(limitStr); err == nil && parsed > 0 {
+			limit = parsed
+			if limit > 100 {
+				limit = 100
+			}
+		}
+	}
+
+	offset := 0
+	if offsetStr := c.Query("offset"); offsetStr != "" {
+		if parsed, err := strconv.Atoi(offsetStr); err == nil && parsed >= 0 {
+			offset = parsed
+		}
+	}
+
+	// Build filters
+	filters := &message.MessageFilters{
+		PeerID:    c.Query("peer_id"),
+		Since:     c.Query("since"),
+		Status:    c.Query("status"),
+		Direction: c.Query("direction"),
+	}
+
+	// Call service
+	messages, total, err := h.service.GetUserMessages(
+		c.Request.Context(),
+		userID,
+		limit,
+		offset,
+		filters,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+			"code":  "FETCH_FAILED",
+		})
+		return
+	}
+
+	// Return paginated response
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data": gin.H{
+			"messages": messages,
+			"total":    total,
+			"limit":    limit,
+			"offset":   offset,
+			"has_more": (offset + limit) < int(total),
+		},
+	})
+}
+
+// GetConversation handles GET /api/v1/messages/conversation/:peer_id
+func (h *MessageHandler) GetConversation(c *gin.Context) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Unauthorized",
+			"code":  "UNAUTHORIZED",
+		})
+		return
+	}
+
+	// Parse peer ID
+	peerIDStr := c.Param("peer_id")
+	peerID, err := uuid.Parse(peerIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid peer ID",
+			"code":  "INVALID_PEER_ID",
+		})
+		return
+	}
+
+	// Parse pagination
+	limit := 50
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if parsed, err := strconv.Atoi(limitStr); err == nil && parsed > 0 {
+			limit = parsed
+			if limit > 100 {
+				limit = 100
+			}
+		}
+	}
+
+	offset := 0
+	if offsetStr := c.Query("offset"); offsetStr != "" {
+		if parsed, err := strconv.Atoi(offsetStr); err == nil && parsed >= 0 {
+			offset = parsed
+		}
+	}
+
+	// Parse time filters
+	var beforeTime, afterTime *time.Time
+	if before := c.Query("before"); before != "" {
+		if t, err := time.Parse(time.RFC3339, before); err == nil {
+			beforeTime = &t
+		}
+	}
+	if after := c.Query("after"); after != "" {
+		if t, err := time.Parse(time.RFC3339, after); err == nil {
+			afterTime = &t
+		}
+	}
+
+	// Call service
+	messages, total, err := h.service.GetConversation(
+		c.Request.Context(),
+		userID,
+		peerID,
+		limit,
+		offset,
+		beforeTime,
+		afterTime,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+			"code":  "FETCH_FAILED",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data": gin.H{
+			"messages": messages,
+			"total":    total,
+			"limit":    limit,
+			"offset":   offset,
+			"peer_id":  peerID,
+		},
+	})
+}
+
+// MarkAsRead handles PATCH /api/v1/messages/:id/read
+func (h *MessageHandler) MarkAsRead(c *gin.Context) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Unauthorized",
+			"code":  "UNAUTHORIZED",
+		})
+		return
+	}
+
+	messageIDStr := c.Param("id")
+	messageID, err := uuid.Parse(messageIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid message ID",
+			"code":  "INVALID_MESSAGE_ID",
+		})
+		return
+	}
+
+	message, err := h.service.MarkMessageAsRead(c.Request.Context(), messageID, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+			"code":  "MARK_READ_FAILED",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   message,
+	})
 }

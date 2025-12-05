@@ -1,6 +1,10 @@
 package api
 
 import (
+	"context"
+	"log"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -10,7 +14,9 @@ import (
 	"github.com/ymow/messenger_protocol_research/internal/cleanup"
 	"github.com/ymow/messenger_protocol_research/internal/discovery"
 	"github.com/ymow/messenger_protocol_research/internal/matrix"
+	"github.com/ymow/messenger_protocol_research/internal/message"
 	"github.com/ymow/messenger_protocol_research/internal/trip"
+	"github.com/ymow/messenger_protocol_research/internal/websocket"
 )
 
 // SetupRoutes sets up all HTTP routes
@@ -35,6 +41,21 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
 	// Initialize services
 	tripService := trip.NewService(db, redisClient)
 	discoveryService := discovery.NewService(db)
+	messageService := message.NewService(db, redisClient)
+
+	// Initialize WebSocket Hub (Phase 1)
+	hub := websocket.NewHub(redisClient, messageService)
+	wsMessageHandler := websocket.NewMessageHandler(hub)
+
+	// Start Hub in background
+	go hub.Run()
+	log.Println("✅ WebSocket Hub started")
+
+	// Initialize and start message status worker (Phase 1)
+	statusWorker := message.NewStatusWorker(messageService)
+	ctx := context.Background()
+	go statusWorker.Start(ctx)
+	log.Println("✅ Message status worker started")
 
 	// Initialize Matrix services (for Week 2)
 	// Note: In production, use actual Matrix homeserver URL from config
@@ -51,8 +72,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
 	matrixHandler := NewMatrixHandler(ephemeralRoomMgr, tripService)
 	cleanupHandler := NewCleanupHandler(cleanupService)
 	connectionsHandler := NewConnectionsHandler()
-	messageHandler := NewMessageHandler(db)
-	websocketHandler := NewWebSocketHandler(connectionsHandler)
+	messageHandler := NewMessageHandler(db, messageService)
 
 	// API v1 routes
 	v1 := router.Group("/api/v1")
@@ -110,12 +130,50 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
 
 		// Chat endpoints (Phase 0)
 		v1.GET("/connections", connectionsHandler.GetConnections)
-		v1.POST("/message", messageHandler.PostMessage)
+
+		// Message endpoints (Phase 1)
+		messages := v1.Group("/messages")
+		{
+			messages.POST("", messageHandler.PostMessage)                         // Create message
+			messages.GET("", messageHandler.GetMessages)                          // Get messages with filters
+			messages.GET("/conversation/:peer_id", messageHandler.GetConversation) // Get conversation
+			messages.PATCH("/:id/read", messageHandler.MarkAsRead)                 // Mark as read
+		}
 
 		// TODO: Add more endpoints in future phases
 		// v1.POST("/auth/anonymous", handlers.AnonymousAuthHandler)
 	}
 
-	// WebSocket endpoint (Phase 0 - Day 2)
-	router.GET("/ws", websocketHandler.HandleWebSocket)
+	// WebSocket endpoint (Phase 1 - Proper Hub Integration)
+	router.GET("/ws", func(c *gin.Context) {
+		// Get user info from query params
+		userID := c.Query("user_id")
+		if userID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+			return
+		}
+
+		deviceID := c.Query("device_id")
+		sessionID := c.Query("session_id")
+		stationID := c.Query("station_id")
+
+		// Upgrade connection
+		conn, err := websocket.UpgradeConnection(c.Writer, c.Request)
+		if err != nil {
+			log.Printf("WebSocket upgrade failed: %v", err)
+			return
+		}
+
+		// Create client
+		client := websocket.NewClient(conn, hub, userID, deviceID, sessionID, stationID, wsMessageHandler)
+
+		// Register client with hub
+		hub.RegisterClient(client)
+
+		// Start client read and write pumps
+		go client.WritePump()
+		go client.ReadPump()
+
+		log.Printf("✅ WebSocket client connected: user=%s, station=%s", userID, stationID)
+	})
 }

@@ -6,16 +6,19 @@ import "time"
 type MessageType string
 
 const (
-	MessageTypeMessage   MessageType = "message"   // Regular chat message
-	MessageTypeBroadcast MessageType = "broadcast" // Station-wide broadcast
-	MessageTypeTyping    MessageType = "typing"    // Typing indicator
-	MessageTypePresence  MessageType = "presence"  // User presence update
-	MessageTypeJoin      MessageType = "join"      // User joined station
-	MessageTypeLeave     MessageType = "leave"     // User left station
-	MessageTypePing      MessageType = "ping"      // Heartbeat ping
-	MessageTypePong      MessageType = "pong"      // Heartbeat pong
-	MessageTypeError     MessageType = "error"     // Error message
-	MessageTypeAck       MessageType = "ack"       // Acknowledgment
+	MessageTypeMessage      MessageType = "message"       // Regular chat message
+	MessageTypeBroadcast    MessageType = "broadcast"     // Station-wide broadcast
+	MessageTypeTyping       MessageType = "typing"        // Typing indicator
+	MessageTypePresence     MessageType = "presence"      // User presence update
+	MessageTypeJoin         MessageType = "join"          // User joined station
+	MessageTypeLeave        MessageType = "leave"         // User left station
+	MessageTypePing         MessageType = "ping"          // Heartbeat ping
+	MessageTypePong         MessageType = "pong"          // Heartbeat pong
+	MessageTypeError        MessageType = "error"         // Error message
+	MessageTypeAck          MessageType = "ack"           // Acknowledgment
+	MessageTypeReadReceipt  MessageType = "read_receipt"  // Client → Server: mark as read (Phase 1)
+	MessageTypeReadAck      MessageType = "read_ack"      // Server → Client: read acknowledgment (Phase 1)
+	MessageTypeDeliveryAck  MessageType = "delivery_ack"  // Client → Server: delivery acknowledgment (Phase 1)
 )
 
 // WebSocketMessage represents a message sent over WebSocket

@@ -1,9 +1,11 @@
 package websocket
 
 import (
+	"context"
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/ymow/messenger_protocol_research/internal/model"
 )
 
@@ -32,6 +34,10 @@ func (h *MessageHandler) HandleMessage(client *Client, msg *model.ClientMessage)
 		h.handlePresenceUpdate(client, msg)
 	case model.MessageTypePing:
 		h.handlePing(client)
+	case model.MessageTypeReadReceipt:
+		h.handleReadReceipt(client, msg)
+	case model.MessageTypeDeliveryAck:
+		h.handleDeliveryAck(client, msg)
 	default:
 		fmt.Printf("Unknown message type: %s\n", msg.Type)
 		client.sendError("UNKNOWN_MESSAGE_TYPE", fmt.Sprintf("Unknown message type: %s", msg.Type))
@@ -225,5 +231,86 @@ func (h *MessageHandler) handlePing(client *Client) {
 	case client.send <- pongMsg:
 	default:
 		fmt.Printf("Failed to send pong to client: send channel full\n")
+	}
+}
+
+// handleReadReceipt handles read receipt events from clients
+func (h *MessageHandler) handleReadReceipt(client *Client, msg *model.ClientMessage) {
+	// Parse message IDs from metadata
+	var messageIDs []uuid.UUID
+	if msg.Metadata != nil {
+		if ids, ok := msg.Metadata["message_ids"].([]interface{}); ok {
+			for _, id := range ids {
+				if idStr, ok := id.(string); ok {
+					if msgID, err := uuid.Parse(idStr); err == nil {
+						messageIDs = append(messageIDs, msgID)
+					}
+				}
+			}
+		}
+	}
+
+	if len(messageIDs) == 0 {
+		client.sendError("INVALID_READ_RECEIPT", "No valid message IDs provided")
+		return
+	}
+
+	// Mark as read in database
+	ctx := context.Background()
+	userID, err := uuid.Parse(client.UserID)
+	if err != nil {
+		client.sendError("INVALID_USER_ID", "Invalid user ID")
+		return
+	}
+
+	updatedMessages, err := h.hub.messageService.MarkMessagesAsRead(ctx, messageIDs, userID)
+	if err != nil {
+		client.sendError("READ_RECEIPT_FAILED", err.Error())
+		fmt.Printf("⚠️  Failed to mark messages as read: %v\n", err)
+		return
+	}
+
+	// Send read acknowledgments to original senders
+	for _, message := range updatedMessages {
+		readAckMsg := &model.ServerMessage{
+			ID:        uuid.New().String(),
+			Type:      model.MessageTypeReadAck,
+			From:      client.UserID,
+			To:        message.SenderID.String(),
+			Timestamp: time.Now(),
+			Metadata: map[string]interface{}{
+				"message_id": message.ID.String(),
+				"read_at":    message.ReadAt,
+			},
+		}
+
+		// Send to original sender
+		h.hub.SendToUser(message.SenderID.String(), readAckMsg)
+	}
+
+	fmt.Printf("📖 Read receipt: user %s read %d messages\n", client.UserID, len(updatedMessages))
+}
+
+// handleDeliveryAck handles delivery acknowledgment from client
+func (h *MessageHandler) handleDeliveryAck(client *Client, msg *model.ClientMessage) {
+	var messageID uuid.UUID
+	if msg.Metadata != nil {
+		if idStr, ok := msg.Metadata["message_id"].(string); ok {
+			messageID, _ = uuid.Parse(idStr)
+		}
+	}
+
+	if messageID == uuid.Nil {
+		client.sendError("INVALID_DELIVERY_ACK", "No valid message ID provided")
+		return
+	}
+
+	// Update to DELIVERED status
+	ctx := context.Background()
+	if err := h.hub.messageService.UpdateDeliveryStatus(ctx, messageID, model.MessageDelivered); err != nil {
+		fmt.Printf("⚠️  Failed to update delivery status: %v\n", err)
+		client.sendError("DELIVERY_ACK_FAILED", err.Error())
+	} else {
+		fmt.Printf("✅ Message %s delivered to user %s\n", messageID, client.UserID)
 	}
 }

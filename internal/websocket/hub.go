@@ -1,10 +1,16 @@
 package websocket
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
+
+	"github.com/ymow/messenger_protocol_research/internal/cache"
+	"github.com/ymow/messenger_protocol_research/internal/message"
 	"github.com/ymow/messenger_protocol_research/internal/model"
 )
 
@@ -36,6 +42,10 @@ type Hub struct {
 
 	// Statistics
 	stats *HubStats
+
+	// Phase 1: Offline message queue support
+	redis          *redis.Client
+	messageService *message.Service
 }
 
 // BroadcastMessage represents a message to broadcast to a station
@@ -60,7 +70,7 @@ type HubStats struct {
 }
 
 // NewHub creates a new Hub
-func NewHub() *Hub {
+func NewHub(redis *redis.Client, msgService *message.Service) *Hub {
 	return &Hub{
 		clients:          make(map[*Client]bool),
 		clientsByUser:    make(map[string]*Client),
@@ -72,6 +82,8 @@ func NewHub() *Hub {
 		stats: &HubStats{
 			ClientsByStation: make(map[string]int),
 		},
+		redis:          redis,
+		messageService: msgService,
 	}
 }
 
@@ -148,6 +160,11 @@ func (h *Hub) registerClient(client *Client) {
 			},
 			Exclude: client, // Don't send join event to the joining user
 		})
+	}
+
+	// Phase 1: Deliver offline messages after registration
+	if h.redis != nil && h.messageService != nil && client.UserID != "" {
+		go h.DeliverOfflineMessages(client)
 	}
 }
 
@@ -255,6 +272,20 @@ func (h *Hub) sendDirectMessage(directMsg *DirectMessage) {
 		return
 	}
 
+	// Extract message ID for status tracking
+	var messageID uuid.UUID
+	if directMsg.Message.Metadata != nil {
+		if idStr, ok := directMsg.Message.Metadata["message_id"].(string); ok {
+			messageID, _ = uuid.Parse(idStr)
+		}
+	}
+
+	// Update to SENDING status
+	if messageID != uuid.Nil && h.messageService != nil {
+		ctx := context.Background()
+		h.messageService.UpdateDeliveryStatus(ctx, messageID, model.MessageSending)
+	}
+
 	// Update stats
 	h.stats.mu.Lock()
 	h.stats.MessagesHandled++
@@ -262,7 +293,17 @@ func (h *Hub) sendDirectMessage(directMsg *DirectMessage) {
 
 	select {
 	case client.send <- directMsg.Message:
+		// Update to SENT status after successful send
+		if messageID != uuid.Nil && h.messageService != nil {
+			ctx := context.Background()
+			h.messageService.UpdateDeliveryStatus(ctx, messageID, model.MessageSent)
+		}
 	default:
+		// Send failed - mark as FAILED
+		if messageID != uuid.Nil && h.messageService != nil {
+			ctx := context.Background()
+			h.messageService.UpdateDeliveryStatus(ctx, messageID, model.MessageFailed)
+		}
 		// Client's send channel is full, unregister it
 		h.unregister <- client
 	}
@@ -378,6 +419,72 @@ func (h *Hub) RegisterClient(client *Client) {
 // UnregisterClient sends a client to the unregister channel
 func (h *Hub) UnregisterClient(client *Client) {
 	h.unregister <- client
+}
+
+// DeliverOfflineMessages sends queued messages when user connects
+func (h *Hub) DeliverOfflineMessages(client *Client) {
+	ctx := context.Background()
+
+	// Create Redis service wrapper
+	redisService := cache.NewRedisServiceFromClient(h.redis)
+
+	// Dequeue messages (max 100 at once)
+	messageIDStrs, err := redisService.DequeueOfflineMessages(ctx, client.UserID, 100)
+	if err != nil {
+		fmt.Printf("⚠️  Failed to dequeue messages: %v\n", err)
+		return
+	}
+
+	if len(messageIDStrs) == 0 {
+		return
+	}
+
+	fmt.Printf("📬 Delivering %d offline messages to user %s\n", len(messageIDStrs), client.UserID)
+
+	// Parse message IDs
+	messageIDs := make([]uuid.UUID, 0, len(messageIDStrs))
+	for _, idStr := range messageIDStrs {
+		if msgID, err := uuid.Parse(idStr); err == nil {
+			messageIDs = append(messageIDs, msgID)
+		}
+	}
+
+	// Fetch messages from database
+	messages, err := h.messageService.GetMessagesByIDs(ctx, messageIDs)
+	if err != nil {
+		fmt.Printf("⚠️  Failed to fetch messages: %v\n", err)
+		return
+	}
+
+	// Send each message
+	deliveredCount := 0
+	for _, msg := range messages {
+		serverMsg := &model.ServerMessage{
+			ID:        msg.ID.String(),
+			Type:      model.MessageTypeMessage,
+			From:      msg.SenderID.String(),
+			Content:   msg.Text,
+			Timestamp: msg.Timestamp,
+			Metadata: map[string]interface{}{
+				"message_id":      msg.ID.String(),
+				"delivery_status": msg.DeliveryStatus,
+				"is_offline":      true, // Flag for client
+			},
+		}
+
+		select {
+		case client.send <- serverMsg:
+			// Mark as delivered
+			h.messageService.UpdateDeliveryStatus(ctx, msg.ID, model.MessageDelivered)
+			deliveredCount++
+		default:
+			// Re-enqueue if send fails
+			redisService.EnqueueOfflineMessage(ctx, client.UserID, msg.ID.String())
+		}
+	}
+
+	fmt.Printf("✅ Delivered %d/%d offline messages to user %s\n",
+		deliveredCount, len(messages), client.UserID)
 }
 
 // generateMessageID generates a unique message ID

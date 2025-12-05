@@ -37,6 +37,11 @@ func NewRedisService(cfg config.RedisConfig) (*RedisService, error) {
 	return &RedisService{client: client}, nil
 }
 
+// NewRedisServiceFromClient creates a Redis service from an existing client
+func NewRedisServiceFromClient(client *redis.Client) *RedisService {
+	return &RedisService{client: client}
+}
+
 // Close closes the Redis connection
 func (s *RedisService) Close() error {
 	return s.client.Close()
@@ -255,4 +260,68 @@ func (s *RedisService) RevokeAccessToken(ctx context.Context, tokenHash string, 
 func (s *RedisService) IsAccessTokenRevoked(ctx context.Context, tokenHash string) (bool, error) {
 	key := "revoked_tokens"
 	return s.client.SIsMember(ctx, key, tokenHash).Result()
+}
+
+// ============================================================
+// Message Queue Operations (Phase 1 - Offline Messages)
+// ============================================================
+
+// EnqueueOfflineMessage adds message to user's offline queue
+func (s *RedisService) EnqueueOfflineMessage(
+	ctx context.Context,
+	receiverID, messageID string,
+) error {
+	queueKey := fmt.Sprintf("message:queue:%s", receiverID)
+
+	// Add to queue tail (RPUSH = FIFO)
+	if err := s.client.RPush(ctx, queueKey, messageID).Err(); err != nil {
+		return fmt.Errorf("failed to enqueue message: %w", err)
+	}
+
+	// Set TTL (7 days = 604800 seconds)
+	if err := s.client.Expire(ctx, queueKey, 7*24*time.Hour).Err(); err != nil {
+		return fmt.Errorf("failed to set queue TTL: %w", err)
+	}
+
+	return nil
+}
+
+// DequeueOfflineMessages retrieves and removes messages from queue
+func (s *RedisService) DequeueOfflineMessages(
+	ctx context.Context,
+	userID string,
+	limit int,
+) ([]string, error) {
+	if limit <= 0 || limit > 1000 {
+		limit = 100
+	}
+
+	queueKey := fmt.Sprintf("message:queue:%s", userID)
+
+	// Get messages from head (oldest first)
+	messageIDs, err := s.client.LRange(ctx, queueKey, 0, int64(limit-1)).Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get queued messages: %w", err)
+	}
+
+	// Remove retrieved messages (keep remaining)
+	if len(messageIDs) > 0 {
+		if err := s.client.LTrim(ctx, queueKey, int64(len(messageIDs)), -1).Err(); err != nil {
+			return nil, fmt.Errorf("failed to trim queue: %w", err)
+		}
+	}
+
+	return messageIDs, nil
+}
+
+// GetQueueLength returns number of queued messages
+func (s *RedisService) GetQueueLength(ctx context.Context, userID string) (int64, error) {
+	queueKey := fmt.Sprintf("message:queue:%s", userID)
+	return s.client.LLen(ctx, queueKey).Result()
+}
+
+// ClearOfflineQueue removes all queued messages for user
+func (s *RedisService) ClearOfflineQueue(ctx context.Context, userID string) error {
+	queueKey := fmt.Sprintf("message:queue:%s", userID)
+	return s.client.Del(ctx, queueKey).Err()
 }
