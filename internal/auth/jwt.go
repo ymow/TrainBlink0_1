@@ -30,13 +30,20 @@ type TokenPair struct {
 	ExpiresIn    int64  `json:"expires_in"`
 }
 
-// Claims represents JWT claims
+// Claims represents JWT claims (supports both admin and user tokens)
 type Claims struct {
-	AdminID     string   `json:"admin_id"`
-	Email       string   `json:"email"`
-	Role        string   `json:"role"`
-	Permissions []string `json:"permissions"`
-	TokenType   string   `json:"token_type"` // "access" or "refresh"
+	// Admin fields
+	AdminID     string   `json:"admin_id,omitempty"`
+	Email       string   `json:"email,omitempty"`
+	Role        string   `json:"role,omitempty"`
+	Permissions []string `json:"permissions,omitempty"`
+
+	// User fields
+	UserID   string `json:"user_id,omitempty"`
+	DeviceID string `json:"device_id,omitempty"`
+
+	// Common fields
+	TokenType string `json:"token_type"` // "access" or "refresh"
 	jwt.RegisteredClaims
 }
 
@@ -88,6 +95,40 @@ func (s *JWTService) GenerateTokenPair(
 	}, nil
 }
 
+// GenerateUserTokenPair generates access and refresh tokens for regular users
+func (s *JWTService) GenerateUserTokenPair(
+	userID uuid.UUID,
+	deviceID string,
+) (*TokenPair, error) {
+	// Generate Access Token
+	accessToken, err := s.generateUserToken(
+		userID.String(),
+		deviceID,
+		"access",
+		s.accessTokenTTL,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate Refresh Token
+	refreshToken, err := s.generateUserToken(
+		userID.String(),
+		deviceID,
+		"refresh",
+		s.refreshTokenTTL,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		ExpiresIn:    int64(s.accessTokenTTL.Seconds()),
+	}, nil
+}
+
 // generateToken creates a JWT token
 func (s *JWTService) generateToken(
 	adminID, email, role string,
@@ -102,6 +143,28 @@ func (s *JWTService) generateToken(
 		Role:        role,
 		Permissions: permissions,
 		TokenType:   tokenType,
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
+			Issuer:    "trainblink-api",
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(s.secretKey)
+}
+
+// generateUserToken creates a JWT token for regular users
+func (s *JWTService) generateUserToken(
+	userID, deviceID string,
+	tokenType string,
+	ttl time.Duration,
+) (string, error) {
+	now := time.Now()
+	claims := Claims{
+		UserID:    userID,
+		DeviceID:  deviceID,
+		TokenType: tokenType,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
@@ -144,6 +207,37 @@ func (s *JWTService) VerifyToken(tokenString string) (*AdminClaims, error) {
 	// Convert to AdminClaims
 	adminClaims := (*AdminClaims)(claims)
 	return adminClaims, nil
+}
+
+// ValidateToken validates and parses a JWT token (for both admin and user tokens)
+func (s *JWTService) ValidateToken(tokenString string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		&Claims{},
+		func(token *jwt.Token) (interface{}, error) {
+			// Verify signing method
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, ErrInvalidToken
+			}
+			return s.secretKey, nil
+		},
+	)
+
+	if err != nil {
+		return nil, ErrInvalidToken
+	}
+
+	claims, ok := token.Claims.(*Claims)
+	if !ok || !token.Valid {
+		return nil, ErrInvalidToken
+	}
+
+	// Check expiration
+	if claims.ExpiresAt.Before(time.Now()) {
+		return nil, ErrExpiredToken
+	}
+
+	return claims, nil
 }
 
 // RefreshAccessToken generates a new access token from refresh token

@@ -11,6 +11,7 @@ import (
 
 	"github.com/ymow/messenger_protocol_research/internal/api/handlers"
 	"github.com/ymow/messenger_protocol_research/internal/api/middleware"
+	"github.com/ymow/messenger_protocol_research/internal/auth"
 	"github.com/ymow/messenger_protocol_research/internal/cleanup"
 	"github.com/ymow/messenger_protocol_research/internal/discovery"
 	"github.com/ymow/messenger_protocol_research/internal/matrix"
@@ -20,7 +21,7 @@ import (
 )
 
 // SetupRoutes sets up all HTTP routes
-func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
+func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, jwtService *auth.JWTService) {
 	// Apply global middleware
 	router.Use(middleware.CORS())
 	router.Use(middleware.Logger())
@@ -67,6 +68,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
 	cleanupService := cleanup.NewService(db, redisClient, tripService, discoveryService, ephemeralRoomMgr)
 
 	// Initialize handlers
+	authHandler := NewAuthHandler(db, jwtService)
 	tripHandler := NewTripHandler(tripService)
 	discoveryHandler := NewDiscoveryHandler(discoveryService)
 	matrixHandler := NewMatrixHandler(ephemeralRoomMgr, tripService)
@@ -74,12 +76,22 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
 	connectionsHandler := NewConnectionsHandler()
 	messageHandler := NewMessageHandler(db, messageService)
 
-	// API v1 routes
-	v1 := router.Group("/api/v1")
+	// Public routes (no authentication required)
+	public := router.Group("/api/v1")
 	{
-		// Hello endpoint
-		v1.GET("/hello", handlers.HelloHandler)
-		v1.GET("/welcome", handlers.WelcomeHandler)
+		// Test endpoints
+		public.GET("/hello", handlers.HelloHandler)
+		public.GET("/welcome", handlers.WelcomeHandler)
+
+		// Authentication endpoints
+		public.POST("/auth/anonymous", authHandler.AnonymousLogin)
+		public.POST("/auth/refresh", authHandler.RefreshToken)
+	}
+
+	// Protected API v1 routes (authentication required)
+	v1 := router.Group("/api/v1")
+	v1.Use(middleware.JWTAuthMiddleware(jwtService))
+	{
 
 		// Trip endpoints (Week 1)
 		trips := v1.Group("/trips")
@@ -139,23 +151,49 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
 			messages.GET("/conversation/:peer_id", messageHandler.GetConversation) // Get conversation
 			messages.PATCH("/:id/read", messageHandler.MarkAsRead)                 // Mark as read
 		}
-
-		// TODO: Add more endpoints in future phases
-		// v1.POST("/auth/anonymous", handlers.AnonymousAuthHandler)
 	}
 
-	// WebSocket endpoint (Phase 1 - Proper Hub Integration)
+	// WebSocket endpoint (token-based authentication)
 	router.GET("/ws", func(c *gin.Context) {
-		// Get user info from query params
-		userID := c.Query("user_id")
-		if userID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+		// Get token from query param
+		token := c.Query("token")
+		if token == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "token is required",
+				"hint":  "Add ?token=YOUR_ACCESS_TOKEN to the WebSocket URL",
+			})
 			return
 		}
 
-		deviceID := c.Query("device_id")
-		sessionID := c.Query("session_id")
-		stationID := c.Query("station_id")
+		// Validate token
+		claims, err := jwtService.ValidateToken(token)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid or expired token",
+			})
+			return
+		}
+
+		// Check token type
+		if claims.TokenType != "access" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid token type. Use access token for WebSocket",
+			})
+			return
+		}
+
+		// Extract user info from token
+		userID := claims.UserID
+		deviceID := claims.DeviceID
+		sessionID := c.Query("session_id") // Optional
+		stationID := c.Query("station_id") // Required
+
+		if stationID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "station_id is required",
+			})
+			return
+		}
 
 		// Upgrade connection
 		conn, err := websocket.UpgradeConnection(c.Writer, c.Request)

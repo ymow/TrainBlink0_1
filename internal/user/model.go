@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 )
 
 // User represents a mobile app user
@@ -21,7 +22,7 @@ type User struct {
 	StatusText  *string `json:"status_text,omitempty"`
 
 	// Settings
-	Preferences map[string]interface{} `json:"preferences" gorm:"type:jsonb;default:'{}'"`
+	Preferences datatypes.JSON `json:"preferences" gorm:"type:jsonb;default:'{}'"`
 
 	// Status
 	IsActive  bool       `json:"is_active" gorm:"default:true"`
@@ -61,18 +62,18 @@ type UpdateProfileRequest struct {
 
 // UserResponse is the public user response
 type UserResponse struct {
-	ID            uuid.UUID              `json:"id"`
-	FirebaseUID   string                 `json:"firebase_uid"`
-	DisplayName   *string                `json:"display_name,omitempty"`
-	AvatarEmoji   *string                `json:"avatar_emoji,omitempty"`
-	AvatarColor   *string                `json:"avatar_color,omitempty"`
-	StatusText    *string                `json:"status_text,omitempty"`
-	Preferences   map[string]interface{} `json:"preferences"`
-	IsActive      bool                   `json:"is_active"`
-	IsBanned      bool                   `json:"is_banned"`
-	TotalSessions int                    `json:"total_sessions"`
-	CreatedAt     time.Time              `json:"created_at"`
-	LastSeenAt    *time.Time             `json:"last_seen_at,omitempty"`
+	ID            uuid.UUID      `json:"id"`
+	FirebaseUID   string         `json:"firebase_uid"`
+	DisplayName   *string        `json:"display_name,omitempty"`
+	AvatarEmoji   *string        `json:"avatar_emoji,omitempty"`
+	AvatarColor   *string        `json:"avatar_color,omitempty"`
+	StatusText    *string        `json:"status_text,omitempty"`
+	Preferences   datatypes.JSON `json:"preferences"`
+	IsActive      bool           `json:"is_active"`
+	IsBanned      bool           `json:"is_banned"`
+	TotalSessions int            `json:"total_sessions"`
+	CreatedAt     time.Time      `json:"created_at"`
+	LastSeenAt    *time.Time     `json:"last_seen_at,omitempty"`
 }
 
 // ToResponse converts User to UserResponse

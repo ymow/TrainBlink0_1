@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/ymow/messenger_protocol_research/internal/api"
+	"github.com/ymow/messenger_protocol_research/internal/auth"
 	"github.com/ymow/messenger_protocol_research/internal/cache"
 	"github.com/ymow/messenger_protocol_research/internal/config"
 	"github.com/ymow/messenger_protocol_research/internal/database"
@@ -105,12 +106,23 @@ func main() {
 	// Set Gin mode
 	gin.SetMode(gin.ReleaseMode)
 
+	// Initialize JWT service
+	jwtService := auth.NewJWTService(
+		cfg.JWT.SecretKey,
+		cfg.JWT.AccessTokenTTL,
+		cfg.JWT.RefreshTokenTTL,
+	)
+	logger.Info("JWT service initialized",
+		zap.Duration("access_token_ttl", cfg.JWT.AccessTokenTTL),
+		zap.Duration("refresh_token_ttl", cfg.JWT.RefreshTokenTTL),
+	)
+
 	// Create Gin router
 	router := gin.New()
 	router.Use(gin.Recovery())
 
-	// Setup routes with database and Redis
-	api.SetupRoutes(router, db, redisService.GetClient())
+	// Setup routes with database, Redis, and JWT service
+	api.SetupRoutes(router, db, redisService.GetClient(), jwtService)
 
 	// Create HTTP server
 	server := &http.Server{
