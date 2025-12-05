@@ -13,13 +13,22 @@
 3. 提供內容審核、匹配和同步等增強功能
 4. 保持與原始 P2P 架構的兼容性
 
-## 文檔
+## 📚 文檔導航
 
-- **[TrainBlink 分析報告](TRAINBLINK_ANALYSIS.md)** - 完整的系統分析
-  - 數據模型
-  - 通訊協議
-  - 系統架構
-  - Server 設計建議
+### 重要文檔（必讀）
+
+1. **[📋 DOCS_INDEX.md](DOCS_INDEX.md)** - 完整文檔索引和導航
+2. **[📊 PROJECT_STATUS.md](PROJECT_STATUS.md)** - 當前項目狀態 (WBS & 進度)
+3. **[🗺 ROADMAP.md](ROADMAP.md)** - 詳細技術路線圖 (Phase 0-7)
+4. **[📖 TRAINBLINK_ANALYSIS.md](TRAINBLINK_ANALYSIS.md)** - TrainBlink 系統分析
+
+### 快速開始
+
+- **[⚡ docs/QUICKSTART.md](docs/QUICKSTART.md)** - 5分鐘快速上手指南
+
+### 更多文檔
+
+查看 **[DOCS_INDEX.md](DOCS_INDEX.md)** 獲取完整文檔列表和說明
 
 ## 項目結構
 
@@ -291,44 +300,37 @@ TrainBlink Web 應用提供了完整的瀏覽器端體驗：
 - `/` - 主頁 (英雄區域 + 統計展示)
 - `/chat` - 聊天界面 (用戶名設置 + 實時聊天)
 
-## 路線圖
+## 📊 當前狀態
 
-### Phase 1: 基礎架構 ✅ (已完成)
-- [x] 項目結構設置
-- [x] 分析 TrainBlink 協議
-- [x] 基本 HTTP 服務器
-- [x] WebSocket 支持
-- [x] 數據庫設計和遷移
-- [x] JWT 認證
-- [x] 🆕 **Web 前端應用** - React + TypeScript + Vite
+**整體進度**: 58% 完成
 
-### Phase 2: 核心功能 🚧 (進行中)
-- [x] BLE 發現服務
-- [x] 行程管理系統
-- [x] Matrix 橋接服務
-- [x] 實時通訊 (WebSocket + HTTP)
-- [x] Redis 緩存
-- [x] 地理圍欄功能
-- [x] MLS 端到端加密
-- [x] 自動數據清理
-- [x] 🆕 **移動端應用** - iOS + Android
+詳細狀態和進度請查看 **[PROJECT_STATUS.md](PROJECT_STATUS.md)**
 
-### Phase 3: 增強功能 🔮 (計劃中)
-- [ ] 智能行程檢測 (列車 API 整合)
-- [ ] GPS/位置驗證
-- [ ] 動態消息保存期限
-- [ ] 內容審核服務
-- [ ] 相遇記錄聚合
-- [ ] 封鎖與舉報管理
-- [ ] 分析儀表板
-- [ ] 🆕 **多語言支持** - i18n 國際化
-- [ ] 🆕 **PWA 支持** - 漸進式 Web 應用
+### 已完成
+- ✅ 基礎架構 (HTTP Server, WebSocket, Database, JWT)
+- ✅ Web 前端應用 (React + TypeScript + Vite)
+- ✅ 移動端應用 (iOS + Android)
+- ✅ BLE 發現服務
+- ✅ Matrix 橋接服務
+- ✅ MLS 端到端加密
+- ✅ 地理圍欄功能
+- ✅ Redis 緩存
+- ✅ 自動數據清理
 
-### Phase 4: 優化與部署
-- [ ] 性能優化
-- [ ] 負載測試
-- [ ] Docker 容器化
-- [ ] Kubernetes 部署
+### 進行中
+- 🚧 消息系統完善 (歷史記錄、離線隊列、已讀回執)
+- 🚧 移動端 WebSocket 整合
+- 🚧 車站系統 API
+
+### 計劃中
+- 📋 WebTransport 整合
+- 📋 內容審核服務
+- 📋 用戶安全功能 (封鎖、舉報)
+- 📋 智能行程檢測
+- 📋 多語言支持 (i18n)
+- 📋 PWA 支持
+
+**詳細路線圖**: 請查看 [ROADMAP.md](ROADMAP.md) 和 [PROJECT_STATUS.md](PROJECT_STATUS.md)
 
 ## 貢獻
 
@@ -351,13 +353,16 @@ Copyright © 2025. All rights reserved.
 
 ---
 
-**最後更新**: 2025-11-26
-**狀態**: 🚀 Phase 2 完成 - 具備完整的 Web/移動端/後端功能
+**最後更新**: 2025-12-05
+**整體進度**: 🚀 58% 完成
 
-### 🎯 當前功能狀態
-- ✅ **後端 API** - 完整的 Go 服務器 (HTTP + WebSocket)
+### 🎯 系統狀態
+- ✅ **後端 API** - Go 服務器 (HTTP + WebSocket)
 - ✅ **Web 前端** - React 應用 (實時聊天 + 響應式設計)
-- ✅ **移動端** - iOS/Android 應用 (BLE + Matrix 集成)
-- ✅ **數據庫** - PostgreSQL + Redis (自動清理機制)
+- ⚠️ **移動端** - iOS/Android 應用 (BLE + Matrix 集成，WebSocket 待補完)
+- ✅ **數據庫** - PostgreSQL + Redis + SQLite (自動清理機制)
 - ✅ **加密** - Matrix MLS 端到端加密
 - ✅ **發現** - BLE 匿名發現 + 地理圍欄
+
+### 📚 完整文檔
+查看 [DOCS_INDEX.md](DOCS_INDEX.md) 獲取所有文檔索引

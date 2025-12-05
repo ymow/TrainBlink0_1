@@ -15,20 +15,47 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
+	"github.com/ymow/messenger_protocol_research/internal/auth"
 	"github.com/ymow/messenger_protocol_research/internal/model"
 	"github.com/ymow/messenger_protocol_research/pkg/logger"
 )
 
 // setupTestRouter creates a test router with in-memory database
-func setupTestRouter(t *testing.T) (*gin.Engine, *gorm.DB, func()) {
+func setupTestRouter(t *testing.T) (*gin.Engine, *gorm.DB, *auth.JWTService, func()) {
 	// Initialize logger for tests
 	_ = logger.Initialize("error") // Use error level to reduce test noise
 
-	// Use in-memory SQLite for testing
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	// Use in-memory SQLite for testing with shared cache
+	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	require.NoError(t, err)
 
-	// Create tables manually with SQLite-compatible SQL
+	// Create users table manually because GORM AutoMigrate fails with SQLite due to uuid_generate_v4() default
+	db.Exec(`CREATE TABLE IF NOT EXISTS users (
+		id TEXT PRIMARY KEY,
+		firebase_uid TEXT UNIQUE,
+		matrix_user_id TEXT,
+		display_name TEXT,
+		avatar_emoji TEXT,
+		avatar_color TEXT,
+		status_text TEXT,
+		preferences TEXT DEFAULT '{}',
+		is_active INTEGER DEFAULT 1,
+		is_banned INTEGER DEFAULT 0,
+		ban_reason TEXT,
+		banned_at DATETIME,
+		banned_by TEXT,
+		ban_until DATETIME,
+		total_sessions INTEGER DEFAULT 0,
+		total_encounters INTEGER DEFAULT 0,
+		total_messages_sent INTEGER DEFAULT 0,
+		total_content_shared INTEGER DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		last_seen_at DATETIME,
+		data_retention_days INTEGER DEFAULT 1
+	)`)
+	require.NoError(t, db.Error)
+
 	db.Exec(`CREATE TABLE IF NOT EXISTS trips (
 		id TEXT PRIMARY KEY,
 		user_id TEXT NOT NULL,
@@ -43,6 +70,7 @@ func setupTestRouter(t *testing.T) (*gin.Engine, *gorm.DB, func()) {
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	)`)
+	require.NoError(t, db.Error)
 
 	db.Exec(`CREATE TABLE IF NOT EXISTS discoveries (
 		id TEXT PRIMARY KEY,
@@ -56,6 +84,7 @@ func setupTestRouter(t *testing.T) (*gin.Engine, *gorm.DB, func()) {
 		discovered_gender TEXT,
 		discovered_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	)`)
+	require.NoError(t, db.Error)
 
 	db.Exec(`CREATE TABLE IF NOT EXISTS matrix_ephemeral_rooms (
 		id TEXT PRIMARY KEY,
@@ -72,13 +101,17 @@ func setupTestRouter(t *testing.T) (*gin.Engine, *gorm.DB, func()) {
 		last_message_at DATETIME,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	)`)
+	require.NoError(t, db.Error)
 
 	// Create test router
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
+	// Initialize JWT service for testing
+	jwtService := auth.NewJWTService("secret-key", 24*time.Hour, 7*24*time.Hour)
+
 	// Setup routes (using nil for Redis since we're not testing Redis features)
-	SetupRoutes(router, db, nil)
+	SetupRoutes(router, db, nil, jwtService)
 
 	// Cleanup function
 	cleanup := func() {
@@ -88,12 +121,18 @@ func setupTestRouter(t *testing.T) (*gin.Engine, *gorm.DB, func()) {
 		}
 	}
 
-	return router, db, cleanup
+	return router, db, jwtService, cleanup
+}
+
+func getTestToken(t *testing.T, jwtService *auth.JWTService, userID string) string {
+	tokenPair, err := jwtService.GenerateUserTokenPair(uuid.MustParse(userID), "test-device")
+	require.NoError(t, err)
+	return tokenPair.AccessToken
 }
 
 // TestHealthEndpoints tests basic health check endpoints
 func TestHealthEndpoints(t *testing.T) {
-	router, _, cleanup := setupTestRouter(t)
+	router, _, _, cleanup := setupTestRouter(t)
 	defer cleanup()
 
 	tests := []struct {
@@ -119,11 +158,12 @@ func TestHealthEndpoints(t *testing.T) {
 
 // TestTripEndpoints tests trip management endpoints
 func TestTripEndpoints(t *testing.T) {
-	router, db, cleanup := setupTestRouter(t)
+	router, db, jwtService, cleanup := setupTestRouter(t)
 	defer cleanup()
 
 	// Create a test user
 	testUserID := uuid.New()
+	token := getTestToken(t, jwtService, testUserID.String())
 
 	t.Run("Start Trip", func(t *testing.T) {
 		tripReq := map[string]interface{}{
@@ -136,7 +176,9 @@ func TestTripEndpoints(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/api/v1/trips/start", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("X-User-ID", testUserID.String())
+		req.Header.Set("Authorization", "Bearer "+token) // Use Token
+		// req.Header.Set("X-User-ID", testUserID.String()) // Removed manual ID injection if middleware handles it, but maybe keep if handler needs it? 
+        // actually middleware extracts it from token and sets it in context.
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusCreated, w.Code)
@@ -151,7 +193,7 @@ func TestTripEndpoints(t *testing.T) {
 	t.Run("Get Active Trip", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/api/v1/trips/active", nil)
-		req.Header.Set("X-User-ID", testUserID.String())
+		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -165,7 +207,7 @@ func TestTripEndpoints(t *testing.T) {
 	t.Run("Get User Trips", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/api/v1/trips?limit=10&offset=0", nil)
-		req.Header.Set("X-User-ID", testUserID.String())
+		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -174,6 +216,7 @@ func TestTripEndpoints(t *testing.T) {
 	t.Run("Get Trip Stats", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/api/v1/trips/stats", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -192,7 +235,7 @@ func TestTripEndpoints(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/api/v1/trips/end", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("X-User-ID", testUserID.String())
+		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -201,8 +244,11 @@ func TestTripEndpoints(t *testing.T) {
 
 // TestDiscoveryEndpoints tests discovery tracking endpoints
 func TestDiscoveryEndpoints(t *testing.T) {
-	router, _, cleanup := setupTestRouter(t)
+	router, _, jwtService, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	// Generate a token
+	token := getTestToken(t, jwtService, uuid.New().String())
 
 	t.Run("Log Discovery", func(t *testing.T) {
 		discoveryReq := map[string]interface{}{
@@ -216,6 +262,7 @@ func TestDiscoveryEndpoints(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/api/v1/discoveries/log", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusCreated, w.Code)
@@ -224,6 +271,7 @@ func TestDiscoveryEndpoints(t *testing.T) {
 	t.Run("Get Discovery Stats", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/api/v1/discoveries/stats", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -237,6 +285,7 @@ func TestDiscoveryEndpoints(t *testing.T) {
 	t.Run("Get Popular Routes", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/api/v1/discoveries/popular-routes?limit=10", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -245,6 +294,7 @@ func TestDiscoveryEndpoints(t *testing.T) {
 	t.Run("Get Discovery Trends", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/api/v1/discoveries/trends?days=7", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -253,6 +303,7 @@ func TestDiscoveryEndpoints(t *testing.T) {
 	t.Run("Get Discoveries by Route", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/api/v1/discoveries/route/Tokyo%20→%20Osaka", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -261,12 +312,15 @@ func TestDiscoveryEndpoints(t *testing.T) {
 
 // TestMatrixEndpoints tests Matrix ephemeral DM endpoints
 func TestMatrixEndpoints(t *testing.T) {
-	router, db, cleanup := setupTestRouter(t)
+	router, db, jwtService, cleanup := setupTestRouter(t)
 	defer cleanup()
 
 	// Create two test users with active trips
 	user1ID := uuid.New()
 	user2ID := uuid.New()
+	
+	token1 := getTestToken(t, jwtService, user1ID.String())
+	// token2 := getTestToken(t, jwtService, user2ID.String())
 
 	trip1 := &model.Trip{
 		UserID:           user1ID,
@@ -287,21 +341,26 @@ func TestMatrixEndpoints(t *testing.T) {
 		BLEAnonymousID:   "TB_user2",
 		Status:           "active",
 		DiscoveryEnabled: true,
+		// DiscoveryEnabled: true,
 	}
 	db.Create(trip2)
 
 	t.Run("Get Ephemeral Room Stats", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/api/v1/matrix/dm/stats", nil)
+		req.Header.Set("Authorization", "Bearer "+token1)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("Get My Active DMs - No Active Trip", func(t *testing.T) {
+		noTripUserID := uuid.New().String()
+		noTripToken := getTestToken(t, jwtService, noTripUserID)
+
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/api/v1/matrix/dm/active", nil)
-		req.Header.Set("X-User-ID", uuid.New().String()) // User with no trip
+		req.Header.Set("Authorization", "Bearer "+noTripToken)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -316,7 +375,7 @@ func TestMatrixEndpoints(t *testing.T) {
 	t.Run("Get My Active DMs - With Active Trip", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/api/v1/matrix/dm/active", nil)
-		req.Header.Set("X-User-ID", user1ID.String())
+		req.Header.Set("Authorization", "Bearer "+token1)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -325,8 +384,10 @@ func TestMatrixEndpoints(t *testing.T) {
 
 // TestCleanupEndpoints tests cleanup admin endpoints
 func TestCleanupEndpoints(t *testing.T) {
-	router, db, cleanup := setupTestRouter(t)
+	router, db, jwtService, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	token := getTestToken(t, jwtService, uuid.New().String())
 
 	// Create some expired trips for testing
 	expiredTrip := &model.Trip{
@@ -342,6 +403,7 @@ func TestCleanupEndpoints(t *testing.T) {
 	t.Run("Get Cleanup Stats", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/api/v1/cleanup/stats", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -355,6 +417,7 @@ func TestCleanupEndpoints(t *testing.T) {
 	t.Run("Get Expiring Rooms", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/api/v1/cleanup/expiring-rooms?hours=1", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -363,6 +426,7 @@ func TestCleanupEndpoints(t *testing.T) {
 	t.Run("Run Manual Cleanup", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/api/v1/cleanup/run", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -376,19 +440,21 @@ func TestCleanupEndpoints(t *testing.T) {
 
 // TestErrorCases tests error handling
 func TestErrorCases(t *testing.T) {
-	router, _, cleanup := setupTestRouter(t)
+	router, _, jwtService, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	token := getTestToken(t, jwtService, uuid.New().String())
 
 	t.Run("Invalid Trip ID Format", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/api/v1/trips/invalid-uuid", nil)
-		req.Header.Set("X-User-ID", uuid.New().String())
+		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
-	t.Run("Start Trip Without User ID", func(t *testing.T) {
+	t.Run("Start Trip WITHOUT Token", func(t *testing.T) {
 		tripReq := map[string]interface{}{
 			"route":             "Tokyo → Osaka",
 			"departure_time":    time.Now().Add(1 * time.Hour).Format(time.RFC3339),
@@ -399,7 +465,7 @@ func TestErrorCases(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/api/v1/trips/start", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
-		// No X-User-ID header
+		// No Authorization header
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -409,6 +475,7 @@ func TestErrorCases(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/api/v1/discoveries/log", bytes.NewBufferString("invalid json"))
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -417,11 +484,13 @@ func TestErrorCases(t *testing.T) {
 
 // TestPagination tests pagination parameters
 func TestPagination(t *testing.T) {
-	router, db, cleanup := setupTestRouter(t)
+	router, db, jwtService, cleanup := setupTestRouter(t)
 	defer cleanup()
 
 	// Create test user and trips
 	userID := uuid.New()
+	token := getTestToken(t, jwtService, userID.String())
+
 	for i := 0; i < 5; i++ {
 		trip := &model.Trip{
 			UserID:           userID,
@@ -437,7 +506,7 @@ func TestPagination(t *testing.T) {
 	t.Run("Pagination with Limit", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/api/v1/trips?limit=2&offset=0", nil)
-		req.Header.Set("X-User-ID", userID.String())
+		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
