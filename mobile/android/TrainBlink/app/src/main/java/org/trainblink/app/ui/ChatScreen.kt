@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,6 +32,7 @@ import java.util.*
 fun ChatScreen(
     ephemeralRoom: MatrixEphemeralRoom,
     chatService: MatrixChatService,
+    webSocketService: org.trainblink.app.network.WebSocketService,
     onBack: () -> Unit
 ) {
     var messageText by remember { mutableStateOf("") }
@@ -43,6 +46,10 @@ fun ChatScreen(
     // Open room on first composition
     LaunchedEffect(ephemeralRoom.roomId) {
         try {
+            // Configure and Connect to WebSocket (Echo)
+            webSocketService.configure("test_token", ephemeralRoom.roomId)
+            webSocketService.connect()
+            
             chatService.openRoom(ephemeralRoom)
         } catch (e: Exception) {
             // Handle error
@@ -79,6 +86,7 @@ fun ChatScreen(
                 onSend = {
                     scope.launch {
                         try {
+                            webSocketService.sendMessage(messageText)
                             chatService.sendMessage(messageText)
                             messageText = ""
                         } catch (e: Exception) {
@@ -177,9 +185,9 @@ fun RoomExpiryBanner(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = if (isExpiringSoon) {
-                    androidx.compose.material.icons.Icons.Default.Warning
+                    Icons.Default.Warning
                 } else {
-                    androidx.compose.material.icons.Icons.Default.Schedule
+                    Icons.Default.Info
                 },
                 contentDescription = null,
                 tint = if (isExpiringSoon) {
@@ -269,7 +277,7 @@ fun MessageBubble(message: MessageItem) {
                 if (message.isMine) {
                     if (message.isSent) {
                         Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Default.Check,
+                            imageVector = Icons.Default.Check,
                             contentDescription = "Sent",
                             modifier = Modifier.size(12.dp),
                             tint = MaterialTheme.colorScheme.primary

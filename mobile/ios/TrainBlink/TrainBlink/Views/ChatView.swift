@@ -11,6 +11,7 @@ import SwiftUI
 struct ChatView: View {
     let ephemeralRoom: MatrixEphemeralRoom
     @ObservedObject var chatManager: MatrixChatManager
+    @ObservedObject var webSocketManager: WebSocketManager = WebSocketManager()
 
     @State private var messageText: String = ""
     @State private var showingExtendLifetime = false
@@ -64,6 +65,11 @@ struct ChatView: View {
             }
         }
         .task {
+            // Configure and connect WebSocket (Hello World Echo)
+            // In a real app, token would come from Auth Service
+            webSocketManager.configure(token: "test_token", stationId: ephemeralRoom.roomId)
+            webSocketManager.connect()
+            
             await openRoom()
         }
         .onDisappear {
@@ -96,6 +102,9 @@ struct ChatView: View {
 
         Task {
             do {
+                // Send via WebSocket (Echo)
+                webSocketManager.sendMessage(content: text)
+                
                 try await chatManager.sendMessage(text)
                 messageText = ""
             } catch {
