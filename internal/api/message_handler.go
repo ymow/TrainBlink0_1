@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"time"
@@ -15,15 +16,21 @@ import (
 
 // MessageHandler handles chat message operations
 type MessageHandler struct {
-	db      *gorm.DB
-	service *message.Service
+	db                *gorm.DB
+	service           *message.Service
+	permissionService interface {
+		CanSendMessage(ctx context.Context, senderID, receiverID uuid.UUID) (bool, string, error)
+	}
 }
 
 // NewMessageHandler creates a new message handler
-func NewMessageHandler(db *gorm.DB, service *message.Service) *MessageHandler {
+func NewMessageHandler(db *gorm.DB, service *message.Service, permService interface {
+	CanSendMessage(ctx context.Context, senderID, receiverID uuid.UUID) (bool, string, error)
+}) *MessageHandler {
 	return &MessageHandler{
-		db:      db,
-		service: service,
+		db:                db,
+		service:           service,
+		permissionService: permService,
 	}
 }
 
@@ -58,6 +65,46 @@ func (h *MessageHandler) PostMessage(c *gin.Context) {
 	if req.Timestamp.IsZero() {
 		req.Timestamp = time.Now()
 	}
+
+	// PERMISSION CHECK: Verify sender can message receiver
+	if h.permissionService != nil {
+		canSend, reason, err := h.permissionService.CanSendMessage(
+			c.Request.Context(),
+			req.SenderID,
+			req.ReceiverID,
+		)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to check messaging permission",
+				"code":  "PERMISSION_CHECK_FAILED",
+			})
+			return
+		}
+
+		if !canSend {
+			// Map reason to HTTP status and user message
+			statusCode := http.StatusForbidden
+			errorMsg := "You cannot send messages to this user"
+
+			switch reason {
+			case "NO_VALID_DISCOVERY":
+				errorMsg = "No valid BLE discovery. You must be within range (50-100m) and discovery must be less than 10 minutes old."
+			case "SENDER_BLOCKED_BY_RECEIVER":
+				errorMsg = "This user has blocked you"
+			case "SELF_MESSAGE_NOT_ALLOWED":
+				statusCode = http.StatusBadRequest
+				errorMsg = "You cannot message yourself"
+			}
+
+			c.JSON(statusCode, gin.H{
+				"error": errorMsg,
+				"code":  reason,
+			})
+			return
+		}
+	}
+	// END PERMISSION CHECK
 
 	// Create new message
 	message := model.NewTextMessage(req.Text, req.SenderID, req.ReceiverID)

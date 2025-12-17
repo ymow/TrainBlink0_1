@@ -16,6 +16,7 @@ import (
 	"github.com/ymow/messenger_protocol_research/internal/discovery"
 	"github.com/ymow/messenger_protocol_research/internal/matrix"
 	"github.com/ymow/messenger_protocol_research/internal/message"
+	"github.com/ymow/messenger_protocol_research/internal/permission"
 	"github.com/ymow/messenger_protocol_research/internal/trip"
 	"github.com/ymow/messenger_protocol_research/internal/websocket"
 )
@@ -43,9 +44,10 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, jwt
 	tripService := trip.NewService(db, redisClient)
 	discoveryService := discovery.NewService(db)
 	messageService := message.NewService(db, redisClient)
+	permissionService := permission.NewService(db, redisClient)
 
-	// Initialize WebSocket Hub (Phase 1)
-	hub := websocket.NewHub(redisClient, messageService)
+	// Initialize WebSocket Hub (Phase 1) with permission service
+	hub := websocket.NewHub(redisClient, messageService, permissionService)
 	wsMessageHandler := websocket.NewMessageHandler(hub)
 
 	// Start Hub in background
@@ -70,11 +72,12 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, jwt
 	// Initialize handlers
 	authHandler := NewAuthHandler(db, jwtService)
 	tripHandler := NewTripHandler(tripService)
-	discoveryHandler := NewDiscoveryHandler(discoveryService)
+	discoveryHandler := NewDiscoveryHandler(discoveryService, permissionService)
 	matrixHandler := NewMatrixHandler(ephemeralRoomMgr, tripService)
 	cleanupHandler := NewCleanupHandler(cleanupService)
 	connectionsHandler := NewConnectionsHandler()
-	messageHandler := NewMessageHandler(db, messageService)
+	messageHandler := NewMessageHandler(db, messageService, permissionService)
+	permissionHandler := NewPermissionHandler(permissionService)
 
 	// Public routes (no authentication required)
 	public := router.Group("/api/v1")
@@ -110,12 +113,21 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, jwt
 		discoveries := v1.Group("/discoveries")
 		{
 			discoveries.POST("/log", discoveryHandler.LogDiscovery)
+			discoveries.POST("/record", discoveryHandler.RecordDiscovery) // NEW: Record BLE discovery for messaging permission
 			discoveries.GET("/stats", discoveryHandler.GetDiscoveryStats)
 			discoveries.GET("/popular-routes", discoveryHandler.GetPopularRoutes)
 			discoveries.GET("/trends", discoveryHandler.GetDiscoveryTrends)
 			discoveries.GET("/range", discoveryHandler.GetDiscoveriesByDateRange)
 			discoveries.GET("/route/:route", discoveryHandler.GetDiscoveriesByRoute)
 			discoveries.GET("/route/:route/stats", discoveryHandler.GetRouteStats)
+		}
+
+		// Permission endpoints (BLE-based messaging permissions & blocking)
+		permissions := v1.Group("/permissions")
+		{
+			permissions.POST("/block/:user_id", permissionHandler.BlockUser)       // Block a user
+			permissions.DELETE("/block/:user_id", permissionHandler.UnblockUser)   // Unblock a user
+			permissions.GET("/blocked", permissionHandler.GetBlockedUsers)         // Get list of blocked users
 		}
 
 		// Matrix endpoints (Week 2 - Ephemeral DMs)

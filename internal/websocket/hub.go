@@ -46,6 +46,11 @@ type Hub struct {
 	// Phase 1: Offline message queue support
 	redis          *redis.Client
 	messageService *message.Service
+
+	// Permission service for authorization
+	permissionService interface {
+		CanSendMessage(ctx context.Context, senderID, receiverID uuid.UUID) (bool, string, error)
+	}
 }
 
 // BroadcastMessage represents a message to broadcast to a station
@@ -70,7 +75,9 @@ type HubStats struct {
 }
 
 // NewHub creates a new Hub
-func NewHub(redis *redis.Client, msgService *message.Service) *Hub {
+func NewHub(redis *redis.Client, msgService *message.Service, permService interface {
+	CanSendMessage(ctx context.Context, senderID, receiverID uuid.UUID) (bool, string, error)
+}) *Hub {
 	return &Hub{
 		clients:          make(map[*Client]bool),
 		clientsByUser:    make(map[string]*Client),
@@ -82,8 +89,9 @@ func NewHub(redis *redis.Client, msgService *message.Service) *Hub {
 		stats: &HubStats{
 			ClientsByStation: make(map[string]int),
 		},
-		redis:          redis,
-		messageService: msgService,
+		redis:             redis,
+		messageService:    msgService,
+		permissionService: permService,
 	}
 }
 

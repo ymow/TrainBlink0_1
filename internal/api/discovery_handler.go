@@ -1,23 +1,31 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/ymow/messenger_protocol_research/internal/discovery"
 )
 
 // DiscoveryHandler handles discovery-related HTTP requests
 type DiscoveryHandler struct {
-	service *discovery.Service
+	service           *discovery.Service
+	permissionService interface {
+		RecordDiscovery(ctx context.Context, discovererID, discoveredID uuid.UUID, tripID *uuid.UUID, rssi *int, distanceEstimate *string) error
+	}
 }
 
 // NewDiscoveryHandler creates a new discovery handler
-func NewDiscoveryHandler(service *discovery.Service) *DiscoveryHandler {
+func NewDiscoveryHandler(service *discovery.Service, permService interface {
+	RecordDiscovery(ctx context.Context, discovererID, discoveredID uuid.UUID, tripID *uuid.UUID, rssi *int, distanceEstimate *string) error
+}) *DiscoveryHandler {
 	return &DiscoveryHandler{
-		service: service,
+		service:           service,
+		permissionService: permService,
 	}
 }
 
@@ -261,5 +269,80 @@ func (h *DiscoveryHandler) GetDiscoveryTrends(c *gin.Context) {
 			"trends": trends,
 			"days":   days,
 		},
+	})
+}
+
+// RecordDiscovery handles POST /api/v1/discoveries/record
+// Mobile apps call this when BLE discovery occurs to grant messaging permission
+func (h *DiscoveryHandler) RecordDiscovery(c *gin.Context) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Unauthorized",
+			"code":  "UNAUTHORIZED",
+		})
+		return
+	}
+
+	var req struct {
+		DiscoveredUserID string  `json:"discovered_user_id" binding:"required"`
+		TripID           *string `json:"trip_id"`
+		RSSI             *int    `json:"rssi"`
+		DistanceEstimate *string `json:"distance_estimate"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+			"code":  "INVALID_REQUEST",
+		})
+		return
+	}
+
+	discoveredID, err := uuid.Parse(req.DiscoveredUserID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid discovered user ID",
+			"code":  "INVALID_USER_ID",
+		})
+		return
+	}
+
+	var tripID *uuid.UUID
+	if req.TripID != nil {
+		parsed, err := uuid.Parse(*req.TripID)
+		if err == nil {
+			tripID = &parsed
+		}
+	}
+
+	if h.permissionService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Permission service not available",
+			"code":  "SERVICE_UNAVAILABLE",
+		})
+		return
+	}
+
+	err = h.permissionService.RecordDiscovery(
+		c.Request.Context(),
+		userID,
+		discoveredID,
+		tripID,
+		req.RSSI,
+		req.DistanceEstimate,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+			"code":  "RECORD_FAILED",
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"status":  "success",
+		"message": "Discovery recorded - 10-minute messaging permission granted",
 	})
 }

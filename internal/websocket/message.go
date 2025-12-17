@@ -78,6 +78,52 @@ func (h *MessageHandler) handleChatMessage(client *Client, msg *model.ClientMess
 
 	// If it's a direct message (To is specified)
 	if msg.To != "" {
+		// PERMISSION CHECK: Verify sender can message receiver
+		receiverUUID, err := uuid.Parse(msg.To)
+		if err != nil {
+			client.sendError("INVALID_RECEIVER", "Invalid receiver ID")
+			return
+		}
+
+		senderUUID, err := uuid.Parse(client.UserID)
+		if err != nil {
+			client.sendError("INVALID_SENDER", "Invalid sender ID")
+			return
+		}
+
+		// Check if sender has permission to message receiver
+		canSend, reason, err := h.hub.permissionService.CanSendMessage(
+			context.Background(),
+			senderUUID,
+			receiverUUID,
+		)
+
+		if err != nil {
+			client.sendError("PERMISSION_CHECK_FAILED",
+				fmt.Sprintf("Failed to check permission: %v", err))
+			fmt.Printf("⚠️  Permission check error: %v\n", err)
+			return
+		}
+
+		if !canSend {
+			// Send user-friendly error based on reason
+			errorMsg := "You cannot send messages to this user"
+			switch reason {
+			case "NO_VALID_DISCOVERY":
+				errorMsg = "You must be within BLE range (50-100m) to message this user. Discovery expires after 10 minutes."
+			case "SENDER_BLOCKED_BY_RECEIVER":
+				errorMsg = "This user has blocked you"
+			case "SELF_MESSAGE_NOT_ALLOWED":
+				errorMsg = "You cannot message yourself"
+			}
+
+			client.sendError(reason, errorMsg)
+			fmt.Printf("🚫 Message blocked: %s -> %s (reason: %s)\n",
+				client.UserID, msg.To, reason)
+			return
+		}
+		// END PERMISSION CHECK
+
 		// Send to specific user
 		h.hub.SendToUser(msg.To, serverMsg)
 
